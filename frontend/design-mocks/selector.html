@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>荔知 · 首页设计方案选择器</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;700;900&family=Noto+Serif+SC:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #faf8f4;
+  --fg: #1a1a1a;
+  --fg-muted: #6b6560;
+  --fg-light: #9e9892;
+  --primary: #1b4332;
+  --primary-light: #2d6a4f;
+  --accent: #c9a84c;
+  --accent-light: #e8d48b;
+  --border: #e8e4de;
+  --radius: 12px;
+  --sans: 'Noto Sans SC', sans-serif;
+  --serif: 'Noto Serif SC', serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--sans);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page-header {
+  background: var(--primary);
+  color: #fff;
+  padding: 48px 24px;
+  text-align: center;
+}
+.page-header h1 {
+  font-family: var(--serif);
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: 4px;
+  margin-bottom: 8px;
+}
+.page-header p {
+  font-size: 14px;
+  opacity: 0.7;
+  letter-spacing: 1px;
+}
+
+.container { max-width: 1080px; margin: 0 auto; padding: 40px 24px; }
+
+.section-title {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--accent);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+  margin-bottom: 48px;
+}
+
+.design-card {
+  background: #fff;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
+  transition: transform 0.25s, box-shadow 0.25s;
+  cursor: pointer;
+  position: relative;
+}
+.design-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1), 0 8px 32px rgba(0,0,0,0.06);
+}
+
+.preview {
+  height: 200px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-label {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(0,0,0,0.5);
+  color: #fff;
+  font-size: 11px;
+  padding: 2px 10px;
+  border-radius: 100px;
+  letter-spacing: 1px;
+}
+
+.card-body { padding: 16px 20px; }
+.card-body h3 {
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.card-body .subtitle {
+  font-size: 13px;
+  color: var(--fg-muted);
+  margin-bottom: 12px;
+}
+.color-row { display: flex; gap: 6px; margin-bottom: 12px; }
+.color-dot {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px var(--border);
+}
+
+.card-actions { display: flex; gap: 8px; }
+.btn {
+  flex: 1;
+  padding: 8px 0;
+  border: 1.5px solid var(--border);
+  border-radius: 100px;
+  background: transparent;
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--fg-muted);
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+.btn:hover { border-color: var(--primary); color: var(--primary); }
+.btn-select {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+.btn-select:hover { background: var(--primary-light); }
+
+.design-card.selected {
+  outline: 3px solid var(--accent);
+  outline-offset: -3px;
+}
+.design-card.selected .btn-select {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.selected-banner {
+  display: none;
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: var(--accent);
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 12px;
+  border-radius: 100px;
+  letter-spacing: 1px;
+}
+.design-card.selected .selected-banner { display: block; }
+
+/* Feedback section */
+.feedback-section {
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 32px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
+  margin-top: 20px;
+}
+.feedback-section h2 {
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 16px;
+}
+.feedback-section label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 6px;
+  color: var(--fg);
+}
+.feedback-section textarea {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  font-family: var(--sans);
+  font-size: 14px;
+  color: var(--fg);
+  resize: vertical;
+  min-height: 80px;
+  margin-bottom: 16px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.feedback-section textarea:focus { border-color: var(--primary); }
+.save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 32px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 100px;
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.save-btn:hover { background: var(--primary-light); }
+.save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--primary);
+  color: #fff;
+  padding: 12px 28px;
+  border-radius: 100px;
+  font-size: 14px;
+  box-shadow: 0 4px 20px rgba(27,67,50,0.3);
+  transition: transform 0.3s ease;
+  z-index: 1000;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+.page-footer {
+  text-align: center;
+  padding: 24px;
+  color: var(--fg-light);
+  font-size: 12px;
+  border-top: 1px solid var(--border);
+  margin-top: 40px;
+}
+
+@media (max-width: 640px) {
+  .page-header { padding: 32px 16px; }
+  .page-header h1 { font-size: 24px; }
+  .container { padding: 24px 16px; }
+  .grid { grid-template-columns: 1fr; }
+  .feedback-section { padding: 20px; }
+}
+</style>
+</head>
+<body>
+
+<header class="page-header">
+  <h1>荔知 · 首页设计方案</h1>
+  <p>选择你喜欢的设计风格，点击预览 → 选定 → 保存偏好</p>
+</header>
+
+<div class="container">
+  <h2 class="section-title">10 套设计方案</h2>
+  <div class="grid" id="grid"></div>
+
+  <div class="feedback-section" id="feedback" style="display:none;">
+    <h2>保存你的偏好</h2>
+    <p style="color:var(--fg-muted);margin-bottom:16px;font-size:14px;">
+      当前选择：<strong id="choice-name" style="color:var(--primary);">未选择</strong>
+    </p>
+    <label for="reason">你为什么选择这个设计？</label>
+    <textarea id="reason" placeholder="比如：配色舒服、排版清晰、有深大特色..."></textarea>
+    <label for="improve">你希望调整什么？</label>
+    <textarea id="improve" placeholder="比如：字体换成xxx、配色再亮一些..."></textarea>
+    <button class="save-btn" id="saveBtn" onclick="savePreference()">确认保存偏好</button>
+  </div>
+</div>
+
+<footer class="page-footer">
+  荔知 · 校园信息聚合平台 · 前端设计方案评估工具
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DESIGNS = [
+  { id:'01', file:'01-ink-wash.html', name:'水墨宣纸', sub:'中国传统水墨 · 宣纸纹理 · 印章标签',
+    colors:['#f5f0e8','#2c2c2c','#4a6741','#c9a84c','#c23b22'],
+    bg:'linear-gradient(135deg, #f5f0e8 25%, #ebe5d8 50%, #f0ece0 75%)' },
+  { id:'02', file:'02-corkboard.html', name:'校园布告栏', sub:'物理软木板 · 图钉固定 · 触感拟真',
+    colors:['#c4a882','#1a1a1a','#d32f2f','#1565c0','#fffef5'],
+    bg:'linear-gradient(135deg, #c4a882 25%, #b89e76 50%, #d4bc96 75%)' },
+  { id:'03', file:'03-terminal.html', name:'终端命令行', sub:'CRT绿屏 · 等宽字体 · 磷光效果',
+    colors:['#0a0e14','#b3b1ad','#00e676','#ff6e40','#80cbc4'],
+    bg:'linear-gradient(135deg, #0a0e14 25%, #0f1a22 50%, #0a0e14 75%)' },
+  { id:'04', file:'04-newspaper.html', name:'古典报纸', sub:'中文报刊排版 · 双线报头 · 分栏规则线',
+    colors:['#faf6ed','#1a1a1a','#8b0000','#2f4f4f','#333333'],
+    bg:'linear-gradient(135deg, #faf6ed 25%, #f0ead6 50%, #f5f0e0 75%)' },
+  { id:'05', file:'05-glassmorphism.html', name:'毛玻璃空间', sub:'磨砂透明面板 · 渐变背景 · 深度层次',
+    colors:['#0f2027','#2c5364','#00bcd4','#f5af19','#ffffff'],
+    bg:'linear-gradient(135deg, #0f2027, #203a43, #2c5364)' },
+  { id:'06', file:'06-brutalist.html', name:'粗野主义海报', sub:'零圆角 · 粗黑边框 · 行反色悬停',
+    colors:['#f5f5f0','#000000','#ff0040','#0000ff','#ffff00'],
+    bg:'linear-gradient(135deg, #f5f5f0 25%, #e8e8e0 50%, #f5f5f0 75%)' },
+  { id:'07', file:'07-garden.html', name:'荔园花园', sub:'植物自然 · 有机形状 · 柔和圆角',
+    colors:['#f0f7ed','#2d3a29','#5a8f5c','#e8743f','#ffffff'],
+    bg:'linear-gradient(135deg, #f0f7ed 25%, #e4f0de 50%, #f0f7ed 75%)' },
+  { id:'08', file:'08-blueprint.html', name:'蓝图工程', sub:'建筑蓝图 · 蓝底白线 · 技术标注',
+    colors:['#003b6f','#ffffff','#ffc107','#ff5252','rgba(255,255,255,0.08)'],
+    bg:'linear-gradient(135deg, #003b6f 25%, #004d8a 50%, #003b6f 75%)' },
+  { id:'09', file:'09-shanghai.html', name:'霓虹上海', sub:'Art Deco · 霓虹发光 · 几何装饰',
+    colors:['#121212','#f0e6d3','#ff2d78','#00f5ff','#d4af37'],
+    bg:'linear-gradient(135deg, #121212 25%, #1a1a2e 50%, #121212 75%)' },
+  { id:'10', file:'10-aurora.html', name:'极光天幕', sub:'深空极光动画 · 星空背景 · 空灵感',
+    colors:['#0d1117','#e6edf3','#58a6ff','#7ee787','#d2a8ff'],
+    bg:'linear-gradient(135deg, #0d1117 25%, #101820 50%, #0d1117 75%)' }
+];
+
+let selectedId = null;
+
+function render() {
+  const grid = document.getElementById('grid');
+  // Restore saved preference
+  const saved = localStorage.getItem('lichi-design-preference');
+  if (saved) {
+    selectedId = saved;
+    showFeedback(saved);
+  }
+
+  grid.innerHTML = DESIGNS.map(d => `
+    <div class="design-card ${selectedId === d.id ? 'selected' : ''}" data-id="${d.id}">
+      <div class="preview" style="background:${d.bg}">
+        <span class="preview-label">${d.id}</span>
+        <span class="selected-banner">已选择</span>
+        <div style="text-align:center;color:${d.colors[1] || '#fff'};padding:16px;">
+          <div style="font-size:28px;font-weight:900;letter-spacing:4px;opacity:0.3;font-family:serif;">荔知</div>
+          <div style="font-size:11px;opacity:0.5;margin-top:4px;">${d.name}</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <h3>${d.id}. ${d.name}</h3>
+        <p class="subtitle">${d.sub}</p>
+        <div class="color-row">
+          ${d.colors.map(c => `<div class="color-dot" style="background:${c}"></div>`).join('')}
+        </div>
+        <div class="card-actions">
+          <a class="btn" href="${d.file}" target="_blank">预览</a>
+          <button class="btn btn-select" onclick="selectDesign('${d.id}')">
+            ${selectedId === d.id ? '已选择 ✓' : '选择此方案'}
+          </button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectDesign(id) {
+  selectedId = id;
+  // Update UI
+  document.querySelectorAll('.design-card').forEach(card => {
+    const isSelected = card.dataset.id === id;
+    card.classList.toggle('selected', isSelected);
+    card.querySelector('.btn-select').textContent = isSelected ? '已选择 ✓' : '选择此方案';
+  });
+  showFeedback(id);
+  showToast(`已选择方案 ${id}：${DESIGNS.find(d => d.id === id).name}`);
+}
+
+function showFeedback(id) {
+  const design = DESIGNS.find(d => d.id === id);
+  document.getElementById('feedback').style.display = 'block';
+  document.getElementById('choice-name').textContent = `${design.id}. ${design.name}`;
+  // Restore saved feedback
+  const savedReason = localStorage.getItem('lichi-design-reason');
+  const savedImprove = localStorage.getItem('lichi-design-improve');
+  if (savedReason) document.getElementById('reason').value = savedReason;
+  if (savedImprove) document.getElementById('improve').value = savedImprove;
+}
+
+function savePreference() {
+  if (!selectedId) return;
+  const design = DESIGNS.find(d => d.id === selectedId);
+  localStorage.setItem('lichi-design-preference', selectedId);
+  localStorage.setItem('lichi-design-preference-name', design.name);
+  localStorage.setItem('lichi-design-preference-file', design.file);
+  localStorage.setItem('lichi-design-reason', document.getElementById('reason').value);
+  localStorage.setItem('lichi-design-improve', document.getElementById('improve').value);
+  showToast('偏好已保存！后续开发将以此为模板。');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+render();
+</script>
+</body>
+</html>
