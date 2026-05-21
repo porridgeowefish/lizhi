@@ -32,9 +32,10 @@ The repository separates documents into four roles:
 | `docs/backend-rebuild/planning-memory.md` | planning note | active | current working memory |
 | `docs/backend-rebuild/alignment-database-time-classification.html` | alignment artifact | reference | not source of truth |
 | `docs/archive/source-material/` | local archive | local-only | legacy source files moved out of repo root |
-| `docs/iter-1-content-type-filtering/design.md` | historical iteration doc | review-needed | likely outdated after PRD rewrite |
-| `docs/iter-1-content-type-filtering/acceptance.md` | historical iteration doc | review-needed | likely outdated after PRD rewrite |
-| `docs/iter-1-content-type-filtering/testing.md` | historical iteration doc | review-needed | likely outdated after PRD rewrite |
+| `需求分析/` | local research attachments | local-only | survey and binary research material, not repo source of truth |
+| `docs/iter-1-content-type-filtering/design.md` | historical iteration doc | stale-reference | superseded by the active iter-1 PRD |
+| `docs/iter-1-content-type-filtering/acceptance.md` | historical iteration doc | stale-reference | superseded by the active iter-1 PRD |
+| `docs/iter-1-content-type-filtering/testing.md` | historical iteration doc | stale-reference | superseded by the active iter-1 PRD |
 
 ## Maintenance Rules
 
