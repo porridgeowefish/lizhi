@@ -1,46 +1,39 @@
 # Documentation Index
 
-## Current Status
+This repository keeps one active documentation set. Historical alignment drafts and obsolete mocks are deleted instead of archived when they compete with the current contract.
 
-- iter-1 is partially implemented
-- iter-1 is not yet accepted against its PRD
-- backend documentation now uses audit + remediation docs as the entry point
-
-## Recommended Read Order
+## Read Order
 
 1. [governance/DOCUMENT_REGISTRY.md](governance/DOCUMENT_REGISTRY.md)
 2. [governance/ALIGNMENT_CONSENSUS.md](governance/ALIGNMENT_CONSENSUS.md)
-3. [backend-rebuild/stability-audit.md](backend-rebuild/stability-audit.md)
-4. [backend-rebuild/remediation-board.md](backend-rebuild/remediation-board.md)
-5. [backend-rebuild/current-state.md](backend-rebuild/current-state.md)
-6. [backend-rebuild/iter-1-prd.md](backend-rebuild/iter-1-prd.md)
-7. [backend-rebuild/backend-consensus.md](backend-rebuild/backend-consensus.md)
+3. [backend-rebuild/iter-1-prd.md](backend-rebuild/iter-1-prd.md)
+4. [backend-rebuild/current-state.md](backend-rebuild/current-state.md)
+5. [backend-rebuild/backend-consensus.md](backend-rebuild/backend-consensus.md)
+6. [backend-rebuild/stability-audit.md](backend-rebuild/stability-audit.md)
+7. [backend-rebuild/remediation-board.md](backend-rebuild/remediation-board.md)
 
-## Iteration Reality
+## Active Contract
 
-| Iteration | Status | Meaning |
-| --- | --- | --- |
-| iter-1 | partial | sync, projection, content filtering exist; time-aware governance and ranking are missing |
-| iter-2 | not started | multi-page frontend and source management are not the current priority |
-| iter-3 | not started | product expression should wait for backend contract stabilization |
-| iter-4 | not started | MySQL or PostgreSQL migration should be driven by data architecture decisions |
-| iter-5 | not started | deployment work should follow backend contract and storage hardening |
-
-## Backend Documents
-
-| Asset | Description |
+| Area | Current Agreement |
 | --- | --- |
-| [backend-rebuild/stability-audit.md](backend-rebuild/stability-audit.md) | graded problem list focused on long-term stability |
-| [backend-rebuild/remediation-board.md](backend-rebuild/remediation-board.md) | checked and unchecked remediation board |
-| [backend-rebuild/current-state.md](backend-rebuild/current-state.md) | runtime topology, DB, API, and sync notes |
-| [backend-rebuild/iter-1-prd.md](backend-rebuild/iter-1-prd.md) | iter-1 target contract |
-| [backend-rebuild/backend-consensus.md](backend-rebuild/backend-consensus.md) | concise statement of current shared understanding |
-| [backend-rebuild/rebuild-constraints.md](backend-rebuild/rebuild-constraints.md) | naming and implementation constraints |
-| [backend-rebuild/reuse-decision-table.md](backend-rebuild/reuse-decision-table.md) | reusable decision mapping |
-| [backend-rebuild/planning-memory.md](backend-rebuild/planning-memory.md) | current planning memory |
+| Product unit | `post` |
+| Public content API | `/api/posts` |
+| Core tables | `sources`, `raw_payloads`, `posts`, `post_categories`, `post_projections`, `discarded_posts`, `sync_jobs`, `sync_job_items` |
+| Prescreen policy | Strong rules before raw storage and LLM |
+| Ranking policy | Rule-derived `ranking_score`, never LLM scoring |
+| Frontend rendering | Opportunity-first feed with sanitized `content_html` only in detail |
 
 ## Architecture Snapshot
 
-```text
-WeRSS Cloud -> Backend (WerssConnector) -> SQLite projection -> REST API -> Frontend
+```mermaid
+flowchart LR
+    A["WeRSS upstream"] --> B["WerssConnector"]
+    B --> C["strong prescreen"]
+    C -->|discard| D["discarded_posts"]
+    C -->|allow| E["raw_payloads"]
+    E --> F["posts"]
+    F --> G["LLM summary candidates"]
+    G --> H["rule projection"]
+    H --> I["/api/posts"]
+    I --> J["frontend"]
 ```

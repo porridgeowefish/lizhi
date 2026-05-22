@@ -1,6 +1,6 @@
-# 哈基米南北绿豆
+# Campus Opportunity Engine
 
-校园机会与活动信息聚合项目。
+Rule-first campus opportunity discovery system for WeChat official-account content.
 
 ## Read First
 
@@ -11,8 +11,20 @@
 
 ## Current Reality
 
-- active backend implementation exists
-- cloud sync has been verified against `500+` upstream articles
-- iter-1 is still incomplete against its PRD
-- documentation now separates current state, target state, and remediation
+- `posts` is the only product-facing content model.
+- `articles` is only an upstream WeRSS endpoint name, not an internal table or API contract.
+- Strong rule prescreening runs before raw payload storage, detail fetching, LLM extraction, projection, and persistence.
+- Discarded recap, closure, congratulation, publicity-result, introduction, opinion, tutorial, record-only, and garbled-source content is recorded only in `discarded_posts`.
+- The active public API is `/api/posts`, `/api/sources`, `/api/sync`, and `/api/health`.
 
+## Local Verification
+
+```bash
+cd backend
+pytest
+```
+
+```bash
+cd frontend
+npm run build
+```

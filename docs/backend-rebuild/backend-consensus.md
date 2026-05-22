@@ -1,88 +1,50 @@
 # Backend Consensus
 
+Last updated: `2026-05-22`
+
 ## Current Phase
 
-We are in the `post-sync baseline, pre-acceptance` phase.
+The project is in the `iter-1 acceptance hardening` phase.
 
-This means:
+The goal is no longer "can sync content". The goal is a complete, runnable, maintainable, opportunity-first system whose behavior matches the iter-1 PRD.
 
-- the local stack runs end to end
-- the upstream cloud has been verified
-- the local projection is no longer just a toy snapshot
-- iter-1 is still incomplete against its own PRD
-- the next work should optimize for alignment and correctness, not for adding surface area
+## Fixed Consensus
 
-## What Is True Right Now
+- `posts` is the only internal content model and public API noun.
+- No legacy content compatibility layer is kept.
+- WeRSS may still expose upstream `/articles` endpoints; that name must remain contained inside the connector implementation.
+- Strong prescreening runs before raw payload storage, detail fetch, LLM extraction, projection, and persistence.
+- Prescreened content does not enter `raw_payloads`, `posts`, or `post_projections`.
+- Prescreened content writes only a minimal `discarded_posts` trace.
+- LLM may create one-time summaries and candidate structured fields for new or changed posts.
+- Final `participation_status`, `time_status`, and `ranking_score` are rule-derived.
+- Frontend consumes only `/api/posts`, `/api/sources`, `/api/sync`, and `/api/health`.
 
-- The active implementation target is still `backend`.
-- Frontend is consuming the current backend response shape.
-- The backend connects directly to WeRSS cloud through `WerssConnector`.
-- The current local projection is SQLite-based.
-- Sync jobs, sync job items, article projection, and rule-based content filtering are implemented.
-- Time extraction, timeliness governance, and rule-based opportunity ranking are not implemented yet.
-
-## Aligned Iter-1 Decisions
-
-The team has now aligned these product and architecture choices:
-
-- time fields will formally include `event_start_at`, `event_end_at`, `deadline_at`, `time_status`, and `timeliness_level`
-- `deadline_at` has higher decision priority than `event_end_at` for opportunity validity
-- `participation_status` will be a formal field
-- the default feed is an opportunity-first feed
-- `ranking_score` will be a formal rule-derived field
-- storage direction is `raw payload + normalized post + query projection`
-- summary is the default feed-facing representation; original content is reference and fallback
-- LLM may be used for one-time summary generation and candidate structured extraction, but final ranking and final business-state judgment stay rule-derived
-
-## Agreed Layer Boundaries
-
-- `core`
-- `domain`
-- `application`
-- `db`
-- `infrastructure`
-- `api`
-- `tests`
-
-## Agreed Tables In Use
+## Core Tables
 
 - `sources`
-- `articles`
-- `article_categories`
+- `raw_payloads`
+- `posts`
+- `post_categories`
+- `post_projections`
+- `discarded_posts`
 - `sync_jobs`
 - `sync_job_items`
 
-## Agreed Product Reality
+## Public APIs
 
-- The system is not yet an accepted iter-1 implementation.
-- The current build should be treated as a functional baseline, not as a completed backend.
-- The biggest risk is false confidence caused by the presence of a working UI and a passing small test suite.
-
-## Agreed API Reality
-
-- `GET /api/articles`
-- `GET /api/articles/{id}`
-- `GET /api/articles/categories`
+- `GET /api/posts`
+- `GET /api/posts/{post_id}`
+- `GET /api/posts/categories`
 - `GET /api/sources`
 - `POST /api/sync`
 - `GET /api/sync/jobs/{job_id}`
 - `GET /api/health`
 
-These APIs currently support content filtering and basic sync observability.
-They do not yet satisfy the iter-1 time-awareness contract.
+## Engineering Priorities
 
-## Agreed Engineering Priorities
-
-1. keep docs, PRD, and runtime behavior aligned
-2. stop describing partial work as complete iter capability
-3. add time-aware data model and governance before expanding more UI surface
-4. implement the aligned `participation_status` and `ranking_score` contract
-5. improve query, sync, and storage design before data volume grows further
-6. preserve explainability by keeping rule-based logic explicit
-
-## Required Companion Docs
-
-- `stability-audit.md`
-- `remediation-board.md`
-- `current-state.md`
-- `iter-1-prd.md`
+1. Keep PRD, docs, runtime schema, and frontend API usage aligned.
+2. Keep filtering and ranking explainable through explicit rules.
+3. Treat cloud sync, discard counts, and job status as acceptance evidence.
+4. Keep deployment one-command and verify health, posts API, and sync smoke checks.
+5. Remove stale docs, old tables, local runtime databases, and obsolete mock code instead of carrying them forward.

@@ -1,47 +1,49 @@
 # Document Registry
 
-This file is the index management document for the repository.
+This file is the repository index-management document.
 
-## Source Of Truth Model
+## Source Of Truth Roles
 
-The repository separates documents into four roles:
+| Role | Document |
+| --- | --- |
+| Agent working agreement | `Agent.md` |
+| Documentation entry | `docs/INDEX.md` |
+| Alignment process | `docs/governance/ALIGNMENT_CONSENSUS.md` |
+| Iter-1 target | `docs/backend-rebuild/iter-1-prd.md` |
+| Implemented reality | `docs/backend-rebuild/current-state.md` |
+| Shared consensus | `docs/backend-rebuild/backend-consensus.md` |
+| Stability risks | `docs/backend-rebuild/stability-audit.md` |
+| Execution checklist | `docs/backend-rebuild/remediation-board.md` |
 
-1. target
-2. current state
-3. risk and audit
-4. execution and remediation
+## Active Documents
 
-## Top-Level Registry
+| Path | Status | Notes |
+| --- | --- | --- |
+| `README.md` | active | repository entry |
+| `Agent.md` | active | primary agent and human engineering rules |
+| `CLAUDE.md` | active | pointer to `Agent.md` |
+| `docs/INDEX.md` | active | documentation read order |
+| `docs/governance/ALIGNMENT_CONSENSUS.md` | active | HTML alignment rules |
+| `docs/governance/DOCUMENT_REGISTRY.md` | active | this registry |
+| `docs/backend-rebuild/iter-1-prd.md` | active | target product contract |
+| `docs/backend-rebuild/current-state.md` | active | runtime truth |
+| `docs/backend-rebuild/backend-consensus.md` | active | latest shared agreement |
+| `docs/backend-rebuild/stability-audit.md` | active | risk register |
+| `docs/backend-rebuild/remediation-board.md` | active | checked execution board |
+| `docs/backend-rebuild/rebuild-constraints.md` | active | rebuild constraints |
+| `docs/backend-rebuild/reuse-decision-table.md` | active | migration decision notes |
+| `docs/backend-rebuild/planning-memory.md` | active | working memory |
+| `docs/archive/README.md` | active | archive semantics |
 
-| Path | Role | Status | Notes |
-| --- | --- | --- | --- |
-| `README.md` | repository entry | active | short project entry |
-| `Agent.md` | engineering rules | active | primary repo working agreement |
-| `CLAUDE.md` | pointer | active | points to `Agent.md` |
-| `docs/INDEX.md` | documentation entry | active | read order and doc map |
-| `docs/governance/ALIGNMENT_CONSENSUS.md` | governance | active | HTML alignment rules |
-| `docs/governance/DOCUMENT_REGISTRY.md` | governance | active | this registry |
-| `docs/archive/README.md` | archive guide | active | explains archive semantics |
-| `docs/backend-rebuild/iter-1-prd.md` | target | active | active iter-1 PRD |
-| `docs/backend-rebuild/current-state.md` | current state | active | runtime and implemented facts |
-| `docs/backend-rebuild/stability-audit.md` | audit | active | graded problem list |
-| `docs/backend-rebuild/remediation-board.md` | execution | active | checked and unchecked remediation board |
-| `docs/backend-rebuild/backend-consensus.md` | consensus | active | concise shared understanding |
-| `docs/backend-rebuild/alignment-iter1-opportunity-engine.html` | alignment artifact | active-reference | current interactive alignment page for iter-1 rule choices |
-| `docs/backend-rebuild/iter1-opportunity-engine-alignment.md` | alignment result | active-reference | exported result of the current iter-1 rule alignment round |
-| `docs/backend-rebuild/rebuild-constraints.md` | constraints | active | naming and rebuild constraints |
-| `docs/backend-rebuild/reuse-decision-table.md` | migration reference | active | reuse and non-reuse mapping |
-| `docs/backend-rebuild/planning-memory.md` | planning note | active | current working memory |
-| `docs/backend-rebuild/alignment-database-time-classification.html` | alignment artifact | reference | not source of truth |
-| `docs/archive/source-material/` | local archive | local-only | legacy source files moved out of repo root |
-| `需求分析/` | local research attachments | local-only | survey and binary research material, not repo source of truth |
-| `docs/iter-1-content-type-filtering/design.md` | historical iteration doc | stale-reference | superseded by the active iter-1 PRD |
-| `docs/iter-1-content-type-filtering/acceptance.md` | historical iteration doc | stale-reference | superseded by the active iter-1 PRD |
-| `docs/iter-1-content-type-filtering/testing.md` | historical iteration doc | stale-reference | superseded by the active iter-1 PRD |
+## Removed As Obsolete
+
+- old content-type iteration docs
+- old interactive alignment exports
+- old frontend design mocks
 
 ## Maintenance Rules
 
-- Every active doc must have one clear role.
-- If two docs describe the same thing, one must be demoted or deleted.
-- Reference artifacts may exist, but they must not compete with source-of-truth docs.
-- When a doc becomes obsolete, mark it `stale` or remove it.
+- A current product contract must use `posts`, not internal `articles`.
+- If a document still describes removed APIs or tables, update or delete it in the same change.
+- HTML is only for short-lived alignment. Durable decisions must land in Markdown.
+- Runtime databases, secrets, caches, and deployment artifacts do not belong in the repository.
