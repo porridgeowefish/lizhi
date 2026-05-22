@@ -10,6 +10,23 @@
   - rule-first opportunity discovery logic
   - data and API direction for stable backend evolution
 
+## 0.1 Aligned Decisions
+
+This PRD has been aligned through the interactive HTML round captured in:
+
+- `docs/backend-rebuild/iter1-opportunity-engine-alignment.md`
+
+Aligned decisions:
+
+1. 时间字段采用 `event_start_at + event_end_at + deadline_at + time_status + timeliness_level`
+2. 对机会内容优先以 `deadline_at` 判断是否仍可行动，其次再看 `event_end_at`
+3. `participation_status` 是正式字段，取值为 `participable / non_participable / uncertain`
+4. 默认主列表优先 `participable`，`uncertain` 降权，`non_participable` 不占主位
+5. 排序正式落 `ranking_score` 字段
+6. 排序权重以 `participation_status` 为第一优先级，以 `time_status / urgency` 为第二优先级
+7. 存储正式采用 `raw payload + normalized post + query projection` 三层
+8. 主列表依赖摘要，原文与快照只作为引用与兜底
+
 ---
 
 ## 1. Iteration Goal
@@ -247,6 +264,32 @@ flowchart LR
 2. `normalized post`
 3. `query projection`
 
+用最直白的话解释：
+
+- `raw payload`
+  - 上游原始返回
+  - 作用是“留底”和“可重跑”
+- `normalized post`
+  - 从原始载荷里抽出来的统一业务字段
+  - 作用是“把不同来源变成同一种内容单元”
+- `query projection`
+  - 给接口和前端直接消费的结果
+  - 作用是“为查询和排序服务”
+
+为什么不是只留一个表：
+
+- 如果只有原始载荷：
+  - 查询很难做
+  - 规则重跑和前端展示都要直接吃上游脏字段
+- 如果只有 projection：
+  - 后续改规则、修摘要、修时间提取时没有原始证据
+- 如果把三者混在一起：
+  - 表会越来越重
+  - 每次改规则都要改热数据
+  - 排障和演进成本都会上升
+
+所以三层不是“多建几个字段”，而是把三种完全不同职责拆开。
+
 ### 7.3 Original Text vs Summary
 
 #### We Will Keep
@@ -260,6 +303,14 @@ flowchart LR
 
 - 直接把原文全文作为唯一业务输入
 - 只靠原文 HTML 驱动排序和筛选
+
+### 7.3.1 Practical Mapping
+
+| layer | what it stores | why it exists |
+| --- | --- | --- |
+| raw payload | upstream JSON / raw fields | replay, debug, upstream compatibility |
+| normalized post | title, summary, source, published_at, text snapshot | stable business semantics |
+| query projection | time fields, participation status, ranking score, primary category | fast feed/search/filter behavior |
 
 ### 7.4 Summary Policy
 

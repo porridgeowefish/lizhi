@@ -28,6 +28,7 @@ The repository separates documents into four roles:
 | `docs/backend-rebuild/remediation-board.md` | execution | active | checked and unchecked remediation board |
 | `docs/backend-rebuild/backend-consensus.md` | consensus | active | concise shared understanding |
 | `docs/backend-rebuild/alignment-iter1-opportunity-engine.html` | alignment artifact | active-reference | current interactive alignment page for iter-1 rule choices |
+| `docs/backend-rebuild/iter1-opportunity-engine-alignment.md` | alignment result | active-reference | exported result of the current iter-1 rule alignment round |
 | `docs/backend-rebuild/rebuild-constraints.md` | constraints | active | naming and rebuild constraints |
 | `docs/backend-rebuild/reuse-decision-table.md` | migration reference | active | reuse and non-reuse mapping |
 | `docs/backend-rebuild/planning-memory.md` | planning note | active | current working memory |

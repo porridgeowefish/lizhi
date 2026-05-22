@@ -34,9 +34,9 @@ This board tracks stability work that matters for long-term development, not jus
 
 ## Open P1 Items
 
-- [ ] Define a rule-based ranking contract before adding more UI prioritization behavior.
+- [x] Define a rule-based ranking contract before adding more UI prioritization behavior.
 - [ ] Define a taxonomy migration plan from current categories to PRD categories.
-- [ ] Add a data architecture note for:
+- [x] Add a data architecture note for:
   - raw payload
   - normalized content
   - projection record
@@ -63,6 +63,6 @@ This board tracks stability work that matters for long-term development, not jus
 - [ ] PRD-required time fields exist in schema and API
 - [ ] default list hides expired content through `timeliness_level`
 - [ ] `time_status` filtering exists
-- [ ] rule-based opportunity ranking is defined and documented
+- [x] rule-based opportunity ranking is defined and documented
 - [ ] tests cover time extraction, timeliness, sync completeness, and repeated sync behavior
 - [ ] current-state, PRD, and implementation no longer contradict each other

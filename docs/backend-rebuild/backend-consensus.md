@@ -21,6 +21,18 @@ This means:
 - Sync jobs, sync job items, article projection, and rule-based content filtering are implemented.
 - Time extraction, timeliness governance, and rule-based opportunity ranking are not implemented yet.
 
+## Aligned Iter-1 Decisions
+
+The team has now aligned these product and architecture choices:
+
+- time fields will formally include `event_start_at`, `event_end_at`, `deadline_at`, `time_status`, and `timeliness_level`
+- `deadline_at` has higher decision priority than `event_end_at` for opportunity validity
+- `participation_status` will be a formal field
+- the default feed is an opportunity-first feed
+- `ranking_score` will be a formal rule-derived field
+- storage direction is `raw payload + normalized post + query projection`
+- summary is the default feed-facing representation; original content is reference and fallback
+
 ## Agreed Layer Boundaries
 
 - `core`
@@ -63,8 +75,9 @@ They do not yet satisfy the iter-1 time-awareness contract.
 1. keep docs, PRD, and runtime behavior aligned
 2. stop describing partial work as complete iter capability
 3. add time-aware data model and governance before expanding more UI surface
-4. improve query, sync, and storage design before data volume grows further
-5. preserve explainability by keeping rule-based logic explicit
+4. implement the aligned `participation_status` and `ranking_score` contract
+5. improve query, sync, and storage design before data volume grows further
+6. preserve explainability by keeping rule-based logic explicit
 
 ## Required Companion Docs
 

@@ -34,8 +34,8 @@ The current mission is to make the project safe for sustained iteration, not jus
 
 ## Next Engineering Milestones
 
-1. stabilize documentation and alignment assets
+1. translate the aligned HTML decisions into code and schema
 2. add time-related schema and API contract
-3. design storage split for projection, raw payload, and content snapshot
+3. implement `participation_status` and `ranking_score`
 4. harden sync strategy for larger datasets
 5. expand tests around time, ranking, and data integrity
