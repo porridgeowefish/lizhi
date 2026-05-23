@@ -5,18 +5,21 @@
 
 <br/>
 
-<h3>荔知：规则驱动的校园机会发现引擎</h3>
+<h2>荔知：规则驱动的校园机会发现引擎</h2>
 
 **从信息混沌中，帮助你低成本获得高质量信息**
+**点击 ⬇️⬇️⬇️ 体验**
+<a href="http://106.52.9.231"><img src="https://img.shields.io/badge/快速体验-在线 Demo-E8743F?style=for-the-badge" alt="快速体验"/></a>
 
-<br/>
+**技术栈**
+
 <img src="https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python"/>
 <img src="https://img.shields.io/badge/Vue-3.5-4FC08D?style=flat-square&logo=vuedotjs&logoColor=white" alt="Vue"/>
 <img src="https://img.shields.io/badge/FastAPI-0.115+-009688?style=flat-square&logo=fastapi&logoColor=white" alt="FastAPI"/>
 
-<br/>
 
-[功能](#-功能亮点) · [快速开始](#-快速开始) · [部署](#-部署) · [API](#-api-端点) · [文档](./docs/INDEX.md)
+
+[功能](#功能亮点) · [快速开始](#快速开始) · [部署](#部署) · [API](#api-端点) · [文档](./docs/INDEX.md)
 
 </div>
 
