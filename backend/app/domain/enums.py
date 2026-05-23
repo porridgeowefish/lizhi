@@ -33,6 +33,7 @@ class IngestionStatus(StrEnum):
 
 class LlmStatus(StrEnum):
     NOT_REQUESTED = "not_requested"
+    PENDING = "pending"
     COMPLETED = "completed"
     FAILED = "failed"
     FALLBACK = "fallback"

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from sqlalchemy import create_engine, inspect, text
+from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import Settings
@@ -10,11 +10,26 @@ from app.db.base import Base
 
 
 def build_engine(settings: Settings):
-    connect_args = {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
+    is_sqlite = settings.database_url.startswith("sqlite")
+    connect_args = {"check_same_thread": False, "timeout": 5} if is_sqlite else {}
     if settings.database_url.startswith("sqlite:///"):
         db_path = settings.database_url.replace("sqlite:///", "", 1)
         Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-    return create_engine(settings.database_url, connect_args=connect_args)
+    engine = create_engine(settings.database_url, connect_args=connect_args)
+    if is_sqlite:
+        _configure_sqlite(engine)
+    return engine
+
+
+def _configure_sqlite(engine) -> None:
+    @event.listens_for(engine, "connect")
+    def _set_sqlite_pragmas(dbapi_connection, _connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA synchronous=NORMAL")
+        cursor.execute("PRAGMA busy_timeout=5000")
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
 
 
 def build_session_factory(settings: Settings) -> tuple[object, sessionmaker[Session]]:

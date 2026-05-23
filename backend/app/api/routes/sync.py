@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Request
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.api.serializers import serialize_sync_job
+from app.db.models import LlmTask
 from app.domain.enums import SyncTriggerType
 from app.schemas.responses import SyncJobResponse
 
@@ -36,3 +38,24 @@ def get_sync_job(request: Request, job_id: int):
     finally:
         db.close()
 
+
+@router.get("/llm-queue")
+def get_llm_queue_status(request: Request):
+    db: Session = request.app.state.session_factory()
+    try:
+        rows = (
+            db.query(LlmTask.status, func.count(LlmTask.id))
+            .group_by(LlmTask.status)
+            .all()
+        )
+        return {"stats": {status: count for status, count in rows}}
+    finally:
+        db.close()
+
+
+@router.post("/llm-queue/run")
+async def run_llm_queue_once(request: Request):
+    service = getattr(request.app.state, "llm_queue_service", None)
+    if service is None:
+        raise HTTPException(status_code=503, detail="llm queue not configured")
+    return await service.process_batch()

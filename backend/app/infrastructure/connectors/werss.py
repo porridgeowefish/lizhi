@@ -85,6 +85,14 @@ class WerssConnector:
             offset += len(items)
         return all_items[:limit]
 
+    async def refresh_source(self, source_id: str, start_page: int, end_page: int) -> dict:
+        response = await self._request(
+            "GET",
+            f"/api/v1/wx/mps/update/{source_id}",
+            params={"start_page": start_page, "end_page": end_page},
+        )
+        return response.json()
+
     async def fetch_post_detail(self, post_id: str) -> dict | None:
         response = await self._request(
             "GET",

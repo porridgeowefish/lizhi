@@ -53,6 +53,26 @@ class StubConnector:
         ]
 
 
+class DetailContentConnector:
+    async def fetch_sources(self, limit: int) -> list[dict]:
+        return [{"id": "SRC002", "mp_name": "校园机会中心"}]
+
+    async def fetch_posts(self, source_id: str, limit: int) -> list[dict]:
+        return [
+            {
+                "id": "P004",
+                "title": "讲座报名通知",
+                "description": "面向全校学生开放报名，截止5月28日18:00",
+                "url": "https://example.com/p4",
+                "publish_time": 1780000300,
+                "content_html": "",
+            }
+        ]
+
+    async def fetch_post_detail(self, post_id: str) -> dict:
+        return {"content_html": "", "content": "<section>报名入口已经开放，截止5月28日18:00</section>"}
+
+
 def build_test_client(tmp_path: Path) -> TestClient:
     settings = Settings(
         database_url=f"sqlite:///{(tmp_path / 'test.db').as_posix()}",
@@ -62,6 +82,24 @@ def build_test_client(tmp_path: Path) -> TestClient:
     app = create_app(settings=settings, connector=StubConnector())
     asyncio.run(app.state.ingestion_service.run_sync(SyncTriggerType.MANUAL))
     return TestClient(app)
+
+
+def test_sync_uses_detail_content_fallback(tmp_path: Path):
+    settings = Settings(
+        database_url=f"sqlite:///{(tmp_path / 'detail.db').as_posix()}",
+        enable_scheduler=False,
+        llm_enabled=False,
+    )
+    app = create_app(settings=settings, connector=DetailContentConnector())
+    asyncio.run(app.state.ingestion_service.run_sync(SyncTriggerType.MANUAL))
+    client = TestClient(app)
+
+    payload = client.get("/api/posts").json()
+    assert payload["total"] == 1
+    post_id = payload["items"][0]["id"]
+    detail = client.get(f"/api/posts/{post_id}")
+    detail.raise_for_status()
+    assert "报名入口已经开放" in detail.json()["content_html"]
 
 
 def test_posts_hide_prescreened_by_default(tmp_path: Path):
@@ -106,3 +144,20 @@ def test_category_stats_include_new_dimensions(tmp_path: Path):
     payload = response.json()
     assert "participation_stats" in payload
     assert "time_status_stats" in payload
+
+
+def test_support_click_is_counted_once_per_client(tmp_path: Path):
+    client = build_test_client(tmp_path)
+    client_id = "test-client-001"
+
+    first = client.post("/api/support", json={"client_id": client_id})
+    first.raise_for_status()
+    assert first.json() == {"count": 1, "liked": True, "incremented": True}
+
+    second = client.post("/api/support", json={"client_id": client_id})
+    second.raise_for_status()
+    assert second.json() == {"count": 1, "liked": True, "incremented": False}
+
+    stats = client.get("/api/support", params={"client_id": client_id})
+    stats.raise_for_status()
+    assert stats.json() == {"count": 1, "liked": True, "incremented": False}

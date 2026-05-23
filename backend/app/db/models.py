@@ -120,6 +120,25 @@ class PostProjection(TimestampMixin, Base):
     post: Mapped[Post] = relationship(back_populates="projection")
 
 
+class LlmTask(TimestampMixin, Base):
+    __tablename__ = "llm_tasks"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    post_id: Mapped[int] = mapped_column(ForeignKey("posts.id"), unique=True, index=True)
+    status: Mapped[str] = mapped_column(String(32), default="pending", index=True)
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    last_error: Mapped[str] = mapped_column(Text, default="")
+    locked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class SupportClick(TimestampMixin, Base):
+    __tablename__ = "support_clicks"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    client_token: Mapped[str] = mapped_column(String(128), unique=True, index=True)
+
+
 class DiscardedPost(Base):
     __tablename__ = "discarded_posts"
 

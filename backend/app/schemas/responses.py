@@ -97,3 +97,13 @@ class HealthResponse(BaseModel):
     status: str
     database: str
     upstream_configured: bool
+
+
+class SupportRequest(BaseModel):
+    client_id: str
+
+
+class SupportResponse(BaseModel):
+    count: int
+    liked: bool
+    incremented: bool = False

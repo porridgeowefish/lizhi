@@ -22,8 +22,15 @@ class Settings:
     database_url: str = ""
     sync_interval_minutes: int = 10
     post_fetch_limit: int = 500
-    source_fetch_limit: int = 200
+    source_fetch_limit: int = 500
     enable_scheduler: bool = True
+    upstream_refresh_enabled: bool = True
+    upstream_refresh_on_startup: bool = True
+    upstream_refresh_interval_minutes: int = 60
+    upstream_refresh_start_page: int = 0
+    upstream_refresh_end_page: int = 10
+    upstream_refresh_request_delay_seconds: float = 1.0
+    upstream_refresh_settle_seconds: int = 300
     upstream_base_url: str = ""
     upstream_username: str = ""
     upstream_password: str = ""
@@ -34,6 +41,10 @@ class Settings:
     llm_timeout_seconds: int = 30
     llm_prompt_version: str = "iter1-v1"
     llm_max_input_chars: int = 6000
+    llm_queue_enabled: bool = True
+    llm_worker_interval_seconds: int = 20
+    llm_worker_batch_size: int = 2
+    llm_worker_max_attempts: int = 3
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -45,8 +56,15 @@ class Settings:
             database_url=os.getenv("BACKEND_DATABASE_URL", f"sqlite:///{default_db_path.as_posix()}"),
             sync_interval_minutes=int(os.getenv("BACKEND_SYNC_INTERVAL_MINUTES", "10")),
             post_fetch_limit=int(os.getenv("BACKEND_POST_FETCH_LIMIT", "500")),
-            source_fetch_limit=int(os.getenv("BACKEND_SOURCE_FETCH_LIMIT", "200")),
+            source_fetch_limit=int(os.getenv("BACKEND_SOURCE_FETCH_LIMIT", "500")),
             enable_scheduler=_as_bool(os.getenv("BACKEND_ENABLE_SCHEDULER"), True),
+            upstream_refresh_enabled=_as_bool(os.getenv("BACKEND_UPSTREAM_REFRESH_ENABLED"), True),
+            upstream_refresh_on_startup=_as_bool(os.getenv("BACKEND_UPSTREAM_REFRESH_ON_STARTUP"), True),
+            upstream_refresh_interval_minutes=int(os.getenv("BACKEND_UPSTREAM_REFRESH_INTERVAL_MINUTES", "60")),
+            upstream_refresh_start_page=int(os.getenv("BACKEND_UPSTREAM_REFRESH_START_PAGE", "0")),
+            upstream_refresh_end_page=int(os.getenv("BACKEND_UPSTREAM_REFRESH_END_PAGE", "10")),
+            upstream_refresh_request_delay_seconds=float(os.getenv("BACKEND_UPSTREAM_REFRESH_REQUEST_DELAY_SECONDS", "1.0")),
+            upstream_refresh_settle_seconds=int(os.getenv("BACKEND_UPSTREAM_REFRESH_SETTLE_SECONDS", "300")),
             upstream_base_url=os.getenv("BACKEND_UPSTREAM_BASE_URL", ""),
             upstream_username=os.getenv("BACKEND_UPSTREAM_USERNAME", ""),
             upstream_password=os.getenv("BACKEND_UPSTREAM_PASSWORD", ""),
@@ -57,4 +75,8 @@ class Settings:
             llm_timeout_seconds=int(os.getenv("BACKEND_LLM_TIMEOUT_SECONDS", "30")),
             llm_prompt_version=os.getenv("BACKEND_LLM_PROMPT_VERSION", "iter1-v1"),
             llm_max_input_chars=int(os.getenv("BACKEND_LLM_MAX_INPUT_CHARS", "6000")),
+            llm_queue_enabled=_as_bool(os.getenv("BACKEND_LLM_QUEUE_ENABLED"), True),
+            llm_worker_interval_seconds=int(os.getenv("BACKEND_LLM_WORKER_INTERVAL_SECONDS", "20")),
+            llm_worker_batch_size=int(os.getenv("BACKEND_LLM_WORKER_BATCH_SIZE", "2")),
+            llm_worker_max_attempts=int(os.getenv("BACKEND_LLM_WORKER_MAX_ATTEMPTS", "3")),
         )

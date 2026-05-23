@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import html as html_lib
 import json
 import logging
 from collections import Counter
@@ -30,8 +31,7 @@ from app.application.classification import (
     sanitize_html,
     VALID_CATEGORIES,
 )
-from app.application.services.llm_service import LlmService
-from app.db.models import DiscardedPost, Post, PostCategory, PostProjection, RawPayload, Source, SyncJob, SyncJobItem
+from app.db.models import DiscardedPost, LlmTask, Post, PostCategory, PostProjection, RawPayload, Source, SyncJob, SyncJobItem
 from app.domain.enums import (
     ContentStatus,
     IngestionStatus,
@@ -43,6 +43,23 @@ from app.domain.enums import (
 )
 
 _logger = logging.getLogger(__name__)
+
+
+def extract_post_content(raw_post: dict) -> tuple[str, str]:
+    for field in ("content_html", "content"):
+        candidate = str(raw_post.get(field) or "")
+        if not candidate:
+            continue
+        content_html = sanitize_html(candidate)
+        content_text = html_to_text(content_html)
+        if content_html or normalize_whitespace(content_text):
+            return content_html, content_text
+
+    content_text = normalize_whitespace(str(raw_post.get("content_text") or raw_post.get("text") or ""))
+    if content_text:
+        content_html = f"<p>{html_lib.escape(content_text)}</p>"
+        return content_html, content_text
+    return "", ""
 
 
 def _parse_llm_datetimes(llm_json_str: str, published_at: datetime | None) -> tuple:
@@ -61,12 +78,73 @@ class IngestionService:
         self.session_factory = session_factory
         self.connector = connector
         self.settings = settings
-        self.llm_service = LlmService(settings)
         self._lock = asyncio.Lock()
 
     async def run_sync(self, trigger_type: SyncTriggerType) -> SyncJob:
         async with self._lock:
             return await self._run_sync_locked(trigger_type)
+
+    async def refresh_upstream_sources_then_sync(self) -> dict:
+        refresh_source = getattr(self.connector, "refresh_source", None)
+        if refresh_source is None:
+            return {"status": "skipped", "reason": "connector does not support upstream refresh"}
+
+        raw_sources = await self.connector.fetch_sources(limit=self.settings.source_fetch_limit)
+        _logger.warning(
+            "upstream refresh started: sources=%s start_page=%s end_page=%s",
+            len(raw_sources),
+            self.settings.upstream_refresh_start_page,
+            self.settings.upstream_refresh_end_page,
+        )
+        refreshed = 0
+        skipped = 0
+        failures: list[str] = []
+
+        for raw_source in raw_sources:
+            source_id = str(raw_source.get("id") or raw_source.get("faker_id") or "").strip()
+            source_name = str(raw_source.get("mp_name") or source_id)
+            if not source_id:
+                skipped += 1
+                continue
+            try:
+                payload = await refresh_source(
+                    source_id,
+                    self.settings.upstream_refresh_start_page,
+                    self.settings.upstream_refresh_end_page,
+                )
+                if payload.get("code") not in {0, None}:
+                    failures.append(f"{source_name}: {payload.get('message') or payload.get('code')}")
+                else:
+                    refreshed += 1
+            except Exception as exc:  # noqa: BLE001
+                failures.append(f"{source_name}: {exc}")
+                _logger.exception("upstream refresh failed for %s", source_id)
+
+            delay = max(float(self.settings.upstream_refresh_request_delay_seconds), 0.0)
+            if delay:
+                await asyncio.sleep(delay)
+
+        settle_seconds = max(int(self.settings.upstream_refresh_settle_seconds), 0)
+        if settle_seconds:
+            _logger.warning("upstream refresh settling before sync: seconds=%s", settle_seconds)
+            await asyncio.sleep(settle_seconds)
+
+        sync_job = await self.run_sync(SyncTriggerType.SCHEDULE)
+        result = {
+            "status": "completed" if not failures else "partial_failed",
+            "sources_total": len(raw_sources),
+            "sources_refreshed": refreshed,
+            "sources_skipped": skipped,
+            "failures": failures,
+            "sync_job_id": sync_job.id,
+            "sync_status": sync_job.status,
+            "posts_fetched": sync_job.posts_fetched,
+            "posts_inserted": sync_job.posts_inserted,
+            "posts_updated": sync_job.posts_updated,
+            "posts_discarded": sync_job.posts_discarded,
+        }
+        _logger.warning("upstream refresh finished: %s", result)
+        return result
 
     async def _run_sync_locked(self, trigger_type: SyncTriggerType) -> SyncJob:
         db = self.session_factory()
@@ -156,12 +234,21 @@ class IngestionService:
             upstream_post_id = str(raw_post.get("id") or "").strip()
             if not upstream_post_id:
                 continue
+            existing_post = db.query(Post).filter(Post.upstream_post_id == upstream_post_id).first()
+            if existing_post and existing_post.content_status == ContentStatus.MISSING.value:
+                detail = await self._fetch_detail_if_needed(raw_post, upstream_post_id)
+                if detail:
+                    raw_post = {**raw_post, **detail}
+                    detail_count += 1
             title = str(raw_post.get("title") or "")
             summary = str(raw_post.get("description") or "")
             source_name = source.name
-            body_excerpt = html_to_text(str(raw_post.get("content_html") or ""))[:200]
+            _, raw_content_text = extract_post_content(raw_post)
+            body_excerpt = raw_content_text[:200]
             decision = prescreen_post(title=title, summary=summary, source_name=source_name, body_excerpt=body_excerpt)
             if decision.discard:
+                if existing_post:
+                    self._fill_existing_content_if_available(db, existing_post, raw_post)
                 self._upsert_discarded_post(
                     db,
                     source=source,
@@ -181,8 +268,7 @@ class IngestionService:
                 raw_post = {**raw_post, **detail}
                 detail_count += 1
 
-            content_html = sanitize_html(str(raw_post.get("content_html") or ""))
-            content_text = html_to_text(content_html)
+            content_html, content_text = extract_post_content(raw_post)
             secondary_decision = prescreen_post(
                 title=title,
                 summary=summary,
@@ -190,6 +276,8 @@ class IngestionService:
                 body_excerpt=content_text[:400],
             )
             if secondary_decision.discard:
+                if existing_post:
+                    self._fill_existing_content_if_available(db, existing_post, raw_post)
                 self._upsert_discarded_post(
                     db,
                     source=source,
@@ -207,30 +295,29 @@ class IngestionService:
                 content_text[:2000],
                 payload_hash,
             )
-            post = db.query(Post).filter(Post.upstream_post_id == upstream_post_id).first()
+            post = existing_post or db.query(Post).filter(Post.upstream_post_id == upstream_post_id).first()
             existing_hash = post.content_hash if post else ""
             changed = content_hash != existing_hash
-            llm_result: dict = {
-                "summary": "",
-                "structured": {},
-                "status": LlmStatus.NOT_REQUESTED.value,
-                "model": "",
-                "processed_at": None,
-            }
-            if changed:
-                llm_result = await self.llm_service.summarize_and_extract(title=title, summary=summary, content_text=content_text)
-                if llm_result["status"] == LlmStatus.COMPLETED.value:
-                    llm_count += 1
-                elif not normalize_whitespace(summary):
-                    llm_result["status"] = LlmStatus.FALLBACK.value
-            elif post and post.llm_status == LlmStatus.COMPLETED.value:
+            llm_result = self._base_llm_result()
+            should_enqueue_llm = changed and self.settings.llm_enabled and normalize_whitespace(content_text)
+            if post and not changed:
                 llm_result = {
                     "summary": post.llm_summary,
                     "structured": json.loads(post.llm_structured_json) if post.llm_structured_json else {},
-                    "status": LlmStatus.COMPLETED.value,
+                    "status": post.llm_status or LlmStatus.NOT_REQUESTED.value,
                     "model": post.llm_model,
                     "processed_at": post.llm_processed_at,
                 }
+                should_enqueue_llm = (
+                    post.llm_status != LlmStatus.COMPLETED.value
+                    and self.settings.llm_enabled
+                    and normalize_whitespace(content_text)
+                )
+            elif should_enqueue_llm:
+                llm_result["status"] = LlmStatus.PENDING.value
+            if should_enqueue_llm and llm_result["status"] != LlmStatus.COMPLETED.value:
+                llm_result["status"] = LlmStatus.PENDING.value
+                llm_count += 1
 
             post, created = self._upsert_post(
                 db,
@@ -242,6 +329,8 @@ class IngestionService:
                 llm_result=llm_result,
                 changed=changed,
             )
+            if should_enqueue_llm:
+                self._enqueue_llm_task(db, post)
             normalized_count += 1
             job.posts_inserted += 1 if created else 0
             job.posts_updated += 0 if created else 1
@@ -265,8 +354,52 @@ class IngestionService:
         self._finish_item(db, project_item, SyncStatus.COMPLETED.value)
         self._finish_item(db, persist_item, SyncStatus.COMPLETED.value)
 
+    def _base_llm_result(self) -> dict:
+        return {
+            "summary": "",
+            "structured": {},
+            "status": LlmStatus.NOT_REQUESTED.value,
+            "model": "",
+            "processed_at": None,
+        }
+
+    def _enqueue_llm_task(self, db: Session, post: Post) -> None:
+        task = db.query(LlmTask).filter(LlmTask.post_id == post.id).first()
+        if task is None:
+            task = LlmTask(post_id=post.id)
+        task.status = SyncStatus.PENDING.value
+        task.attempts = 0
+        task.last_error = ""
+        task.locked_at = None
+        task.finished_at = None
+        db.add(task)
+        db.flush()
+
+    def _fill_existing_content_if_available(self, db: Session, post: Post, raw_post: dict) -> bool:
+        content_html, content_text = extract_post_content(raw_post)
+        if not (content_html or normalize_whitespace(content_text)):
+            return False
+
+        post.content_html = content_html
+        post.content_text_snapshot = content_text[:8000]
+        post.content_status = ContentStatus.READY.value
+        post.content_hash = compute_content_hash(
+            post.title,
+            post.summary,
+            post.original_url,
+            content_text[:2000],
+            post.content_hash,
+        )
+        post.ingestion_status = IngestionStatus.UPDATED.value
+        if self.settings.llm_enabled and normalize_whitespace(content_text):
+            post.llm_status = LlmStatus.PENDING.value
+            self._enqueue_llm_task(db, post)
+        db.add(post)
+        db.flush()
+        return True
+
     async def _fetch_detail_if_needed(self, raw_post: dict, upstream_post_id: str) -> dict:
-        if raw_post.get("content_html"):
+        if raw_post.get("content_html") or raw_post.get("content") or raw_post.get("content_text"):
             return {}
         fetch_detail = getattr(self.connector, "fetch_post_detail", None)
         if fetch_detail is None:
@@ -415,7 +548,11 @@ class IngestionService:
         post.published_at = publish_time
         post.content_html = content_html
         post.content_text_snapshot = content_text[:8000]
-        post.content_status = ContentStatus.READY.value if content_html else ContentStatus.MISSING.value
+        post.content_status = (
+            ContentStatus.READY.value
+            if content_html or normalize_whitespace(content_text)
+            else ContentStatus.MISSING.value
+        )
         post.content_hash = content_hash
         post.ingestion_status = IngestionStatus.NEW.value if created else (IngestionStatus.UPDATED.value if changed else IngestionStatus.UNCHANGED.value)
         post.llm_status = llm_result["status"]
