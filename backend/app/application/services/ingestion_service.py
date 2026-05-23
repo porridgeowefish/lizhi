@@ -434,9 +434,15 @@ class IngestionService:
         db.flush()
 
         categories = list(dict.fromkeys(classify_categories(post.title, post.summary, content_text)))
+        # Prefer LLM category over rule-based for both filtering and display
+        llm_structured = llm_result.get("structured") or {}
+        llm_cat = llm_structured.get("category", "")
+        if llm_cat in VALID_CATEGORIES:
+            categories = [llm_cat]
+        category_source = "llm" if llm_cat in VALID_CATEGORIES else "rule_engine"
         db.query(PostCategory).filter(PostCategory.post_id == post.id).delete()
         db.flush()
-        post.categories = [PostCategory(category_code=category_code, category_source="rule_engine") for category_code in categories]
+        post.categories = [PostCategory(category_code=category_code, category_source=category_source) for category_code in categories]
         db.add(post)
         db.flush()
         return post, created
@@ -445,13 +451,6 @@ class IngestionService:
         content_type = classify_content_type(post.title, post.summary, post.content_text_snapshot)
         categories = [category.category_code for category in post.categories] or ["other"]
         primary_category = categories[0]
-
-        # Prefer LLM category over rule-based if valid
-        llm_structured = parse_llm_payload(post.llm_structured_json or "")
-        if llm_structured and llm_structured.get("category"):
-            llm_cat = llm_structured["category"]
-            if llm_cat in VALID_CATEGORIES:
-                primary_category = llm_cat
         time_signals = extract_time_signals(post.title, post.summary, post.content_text_snapshot, post.published_at)
 
         llm_start, llm_end, llm_deadline = _parse_llm_datetimes(post.llm_structured_json, post.published_at)
