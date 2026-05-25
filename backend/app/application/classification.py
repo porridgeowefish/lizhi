@@ -425,9 +425,9 @@ def derive_time_status(signals: TimeSignals, now: datetime | None = None) -> tup
     tz = _tzinfo(signals.deadline_at or signals.event_end_at or signals.event_start_at)
     now = now or datetime.now(tz=tz)
     if signals.deadline_at and signals.deadline_at < now:
-        return TimeStatus.EXPIRED, TimelinessLevel.HIDDEN
+        return TimeStatus.EXPIRED, TimelinessLevel.LOW
     if signals.event_end_at and signals.event_end_at < now:
-        return TimeStatus.EXPIRED, TimelinessLevel.HIDDEN
+        return TimeStatus.EXPIRED, TimelinessLevel.LOW
     if signals.event_start_at and signals.event_end_at and signals.event_start_at <= now <= signals.event_end_at:
         return TimeStatus.ONGOING, TimelinessLevel.NORMAL
     if signals.deadline_at and signals.deadline_at >= now:

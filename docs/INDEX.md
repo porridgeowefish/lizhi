@@ -11,6 +11,9 @@ This repository keeps one active documentation set. Historical alignment drafts 
 5. [backend-rebuild/backend-consensus.md](backend-rebuild/backend-consensus.md)
 6. [backend-rebuild/stability-audit.md](backend-rebuild/stability-audit.md)
 7. [backend-rebuild/remediation-board.md](backend-rebuild/remediation-board.md)
+8. [backend-rebuild/traffic-isolation-plan.md](backend-rebuild/traffic-isolation-plan.md)
+9. [backend-rebuild/mvp-2-article-pipeline.md](backend-rebuild/mvp-2-article-pipeline.md)
+10. [backend-rebuild/deployment-notes.md](backend-rebuild/deployment-notes.md)
 
 ## Active Contract
 
@@ -22,6 +25,8 @@ This repository keeps one active documentation set. Historical alignment drafts 
 | Prescreen policy | Strong rules before raw storage and LLM |
 | Ranking policy | Rule-derived `ranking_score`, never LLM scoring |
 | Frontend rendering | Opportunity-first feed with sanitized `content_html` only in detail |
+| Traffic isolation | Online API does not run upstream refresh or LLM workers in-process |
+| MVP 2 pipeline | DB-backed job queue with refresh/content/LLM workers |
 
 ## Architecture Snapshot
 
@@ -32,8 +37,10 @@ flowchart LR
     C -->|discard| D["discarded_posts"]
     C -->|allow| E["raw_payloads"]
     E --> F["posts"]
-    F --> G["LLM summary candidates"]
-    G --> H["rule projection"]
-    H --> I["/api/posts"]
-    I --> J["frontend"]
+    F --> G["rule projection"]
+    G --> H["/api/posts"]
+    H --> I["frontend"]
+    F --> J["llm_tasks"]
+    J --> K["separate LLM worker"]
+    K --> F
 ```

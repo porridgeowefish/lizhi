@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+
 import httpx
 
 from app.core.config import Settings
@@ -100,3 +102,21 @@ class WerssConnector:
         )
         payload = response.json()
         return payload.get("data") if payload.get("code") == 0 else None
+
+    async def refresh_post(self, post_id: str) -> dict | None:
+        response = await self._request("POST", f"/api/v1/wx/articles/{post_id}/refresh")
+        payload = response.json()
+        task_id = (payload.get("data") or {}).get("task_id")
+        if not task_id:
+            return await self.fetch_post_detail(post_id)
+
+        for _ in range(30):
+            status_response = await self._request("GET", f"/api/v1/wx/articles/refresh/tasks/{task_id}")
+            status_payload = status_response.json().get("data") or {}
+            if status_payload.get("status") == "success":
+                return await self.fetch_post_detail(post_id)
+            if status_payload.get("status") == "failed":
+                raise RuntimeError(status_payload.get("message") or "post refresh failed")
+            await asyncio.sleep(2)
+
+        return await self.fetch_post_detail(post_id)

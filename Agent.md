@@ -55,3 +55,20 @@ These principles are adapted for an AI-native development workflow.
 - Prefer Markdown for durable repo knowledge.
 - Use HTML only as the interactive alignment surface when comparison, selection, or visual decision-making is the goal.
 
+## Test-Driven Workflow
+
+- Start behavior changes by writing or updating the smallest test that captures the expected behavior.
+- Let the first test fail for the right reason before implementing the fix when practical.
+- Implement the narrowest code change that makes the test pass.
+- Add regression tests for bugs before changing production code.
+- Keep tests close to the behavior under change; broaden coverage when the change touches shared contracts, queues, persistence, or user-facing flows.
+- Run the relevant test subset before finishing, and record any tests that could not be run.
+- Do not use manual browser checks as a substitute for automated tests when the behavior can be tested in code.
+
+## Test Process Hygiene
+
+- Any process started only for testing or verification must be terminated as soon as the test is complete.
+- This includes local dev servers, one-off workers, queue consumers, browser automation helpers, tunnels, database shells, and temporary scripts.
+- Before finishing a task, check for test-created background processes when the work started any long-running command.
+- Prefer bounded commands such as `--once`, explicit timeouts, or systemd timers over unbounded loops during tests.
+- Do not leave zombie, orphaned, or ghost processes competing for ports, database locks, CPU, or external API quotas.

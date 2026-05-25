@@ -72,6 +72,23 @@ class SyncStatus(StrEnum):
     FAILED = "failed"
 
 
+class JobStatus(StrEnum):
+    PENDING = "pending"
+    RUNNING = "running"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+    DEAD = "dead"
+    CANCELLED = "cancelled"
+
+
+class JobType(StrEnum):
+    REFRESH_SOURCE = "refresh_source"
+    SYNC_SOURCE_POSTS = "sync_source_posts"
+    FETCH_CONTENT = "fetch_content"
+    LLM_POST = "llm_post"
+    CLEANUP_JOBS = "cleanup_jobs"
+
+
 class SyncStage(StrEnum):
     FETCH_SOURCES = "fetch_sources"
     FETCH_POSTS = "fetch_posts"

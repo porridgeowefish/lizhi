@@ -45,6 +45,7 @@ class Settings:
     llm_worker_interval_seconds: int = 20
     llm_worker_batch_size: int = 2
     llm_worker_max_attempts: int = 3
+    content_worker_batch_size: int = 5
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -79,4 +80,5 @@ class Settings:
             llm_worker_interval_seconds=int(os.getenv("BACKEND_LLM_WORKER_INTERVAL_SECONDS", "20")),
             llm_worker_batch_size=int(os.getenv("BACKEND_LLM_WORKER_BATCH_SIZE", "2")),
             llm_worker_max_attempts=int(os.getenv("BACKEND_LLM_WORKER_MAX_ATTEMPTS", "3")),
+            content_worker_batch_size=int(os.getenv("BACKEND_CONTENT_WORKER_BATCH_SIZE", "5")),
         )

@@ -11,11 +11,13 @@ from fastapi import FastAPI
 import uvicorn
 
 from app.api.routes.health import router as health_router
+from app.api.routes.jobs import router as jobs_router
 from app.api.routes.posts import router as posts_router
 from app.api.routes.sources import router as sources_router
 from app.api.routes.sync import router as sync_router
 from app.api.routes.support import router as support_router
 from app.application.services.ingestion_service import IngestionService
+from app.application.services.job_queue_service import JobQueueService
 from app.application.services.llm_queue_service import LlmQueueService
 from app.application.services.query_service import QueryService
 from app.core.config import Settings
@@ -31,6 +33,7 @@ def create_app(settings: Settings | None = None, connector=None) -> FastAPI:
     _, session_factory = build_session_factory(settings)
     connector = connector or (WerssConnector(settings) if settings.upstream_base_url else None)
     query_service = QueryService()
+    job_queue_service = JobQueueService(session_factory)
     ingestion_service = IngestionService(session_factory, connector, settings) if connector else None
     llm_queue_service = LlmQueueService(session_factory, settings) if settings.llm_queue_enabled and settings.llm_enabled else None
 
@@ -110,12 +113,14 @@ def create_app(settings: Settings | None = None, connector=None) -> FastAPI:
     app.state.settings = settings
     app.state.session_factory = session_factory
     app.state.query_service = query_service
+    app.state.job_queue_service = job_queue_service
     app.state.ingestion_service = ingestion_service
     app.state.llm_queue_service = llm_queue_service
 
     app.include_router(posts_router)
     app.include_router(sources_router)
     app.include_router(sync_router)
+    app.include_router(jobs_router)
     app.include_router(support_router)
     app.include_router(health_router)
     return app

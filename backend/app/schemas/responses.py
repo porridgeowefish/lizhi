@@ -107,3 +107,33 @@ class SupportResponse(BaseModel):
     count: int
     liked: bool
     incremented: bool = False
+
+
+class JobResponse(BaseModel):
+    id: int
+    job_type: str
+    dedupe_key: str
+    status: str
+    priority: int
+    payload: dict
+    attempts: int
+    max_attempts: int
+    last_error: str
+    result: dict
+    created_at: datetime
+    updated_at: datetime
+    finished_at: datetime | None
+
+
+class JobCreateResponse(BaseModel):
+    created: int
+    jobs: list[JobResponse]
+
+
+class JobSummaryResponse(BaseModel):
+    pending: int = 0
+    running: int = 0
+    succeeded: int = 0
+    failed: int = 0
+    dead: int = 0
+    cancelled: int = 0

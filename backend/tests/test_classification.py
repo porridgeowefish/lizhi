@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 
 from app.application.classification import (
+    TimeSignals,
     _validate_llm_output,
     classify_categories,
     classify_content_type,
@@ -14,7 +15,7 @@ from app.application.classification import (
     parse_iso_datetime,
     prescreen_post,
 )
-from app.domain.enums import ContentType, ParticipationStatus, TimeStatus, TimelinessLevel
+from app.domain.enums import ContentType, DisplayLevel, ParticipationStatus, TimeStatus, TimelinessLevel
 
 
 def test_prescreen_recap_hits_with_multiple_signals():
@@ -89,6 +90,28 @@ def test_participation_and_display_for_actionable_content():
     display_level = derive_display_level(ContentType.ACTIONABLE, TimelinessLevel.NORMAL)
     assert participation == ParticipationStatus.PARTICIPABLE
     assert display_level.value == "normal"
+
+
+def test_expired_actionable_content_is_low_priority_but_visible():
+    status, timeliness = derive_time_status(
+        TimeSignals(
+            event_start_at=None,
+            event_end_at=None,
+            deadline_at=datetime(2026, 5, 24, tzinfo=timezone.utc),
+        ),
+        now=datetime(2026, 5, 25, tzinfo=timezone.utc),
+    )
+    display_level = derive_display_level(ContentType.ACTIONABLE, timeliness)
+    participation = derive_participation_status(
+        content_type=ContentType.ACTIONABLE,
+        time_status=status,
+        text="registration open",
+    )
+
+    assert status == TimeStatus.EXPIRED
+    assert timeliness == TimelinessLevel.LOW
+    assert display_level == DisplayLevel.NORMAL
+    assert participation == ParticipationStatus.NON_PARTICIPABLE
 
 
 def test_compute_ranking_score_rewards_near_deadline():

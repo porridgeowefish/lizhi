@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import Counter
 from datetime import date, datetime, timedelta
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import case, func, or_, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.db.models import Post, PostCategory, PostProjection, Source, SyncJob
@@ -76,7 +76,14 @@ class QueryService:
             count_statement = count_statement.where(Post.source_id == source_id)
 
         if sort == "deadline":
+            now = datetime.now()
+            deadline_group = case(
+                (PostProjection.deadline_at.is_(None), 2),
+                (PostProjection.deadline_at < now, 1),
+                else_=0,
+            )
             statement = statement.order_by(
+                deadline_group.asc(),
                 PostProjection.deadline_at.asc().nullslast(),
                 Post.published_at.desc().nullslast(),
                 Post.id.desc(),

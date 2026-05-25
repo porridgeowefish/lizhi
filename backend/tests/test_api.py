@@ -1,12 +1,21 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from fastapi.testclient import TestClient
 
 from app.core.config import Settings
-from app.domain.enums import SyncTriggerType
+from app.db.models import Post, PostCategory, PostProjection, Source
+from app.domain.enums import (
+    ContentType,
+    DisplayLevel,
+    ParticipationStatus,
+    SyncTriggerType,
+    TimelinessLevel,
+    TimeStatus,
+)
 from app.main import create_app
 
 
@@ -84,6 +93,55 @@ def build_test_client(tmp_path: Path) -> TestClient:
     return TestClient(app)
 
 
+def build_empty_test_client(tmp_path: Path) -> TestClient:
+    settings = Settings(
+        database_url=f"sqlite:///{(tmp_path / 'empty.db').as_posix()}",
+        enable_scheduler=False,
+        llm_enabled=False,
+    )
+    app = create_app(settings=settings, connector=None)
+    return TestClient(app)
+
+
+def insert_sorting_post(
+    db,
+    source: Source,
+    upstream_id: str,
+    title: str,
+    deadline_at: datetime | None,
+    published_at: datetime,
+):
+    post = Post(
+        upstream_post_id=upstream_id,
+        source_id=source.id,
+        source_name_snapshot=source.name,
+        title=title,
+        summary=title,
+        original_url=f"https://example.com/{upstream_id}",
+        published_at=published_at,
+        content_hash=upstream_id,
+        content_status="ready",
+    )
+    db.add(post)
+    db.flush()
+    db.add(PostCategory(post_id=post.id, category_code="competition", category_source="test"))
+    time_status = TimeStatus.UNDATED if deadline_at is None else TimeStatus.UPCOMING
+    db.add(
+        PostProjection(
+            post_id=post.id,
+            primary_category="competition",
+            content_type=ContentType.ACTIONABLE.value,
+            deadline_at=deadline_at,
+            time_status=time_status.value,
+            timeliness_level=TimelinessLevel.NORMAL.value,
+            participation_status=ParticipationStatus.PARTICIPABLE.value,
+            display_level=DisplayLevel.NORMAL.value,
+            ranking_score=0,
+        )
+    )
+    return post
+
+
 def test_sync_uses_detail_content_fallback(tmp_path: Path):
     settings = Settings(
         database_url=f"sqlite:///{(tmp_path / 'detail.db').as_posix()}",
@@ -125,6 +183,49 @@ def test_posts_search_and_detail(tmp_path: Path):
     detail_payload = detail.json()
     assert detail_payload["content_html"]
     assert detail_payload["time_status"] in {"upcoming", "undated"}
+
+
+def test_posts_deadline_sort_keeps_expired_after_upcoming_and_undated_last(tmp_path: Path):
+    client = build_empty_test_client(tmp_path)
+    db = client.app.state.session_factory()
+    try:
+        source = Source(upstream_source_id="SORT_SRC", name="Sort Source")
+        db.add(source)
+        db.flush()
+        now = datetime.now(timezone.utc)
+        insert_sorting_post(db, source, "expired", "Expired deadline", now - timedelta(days=1), now)
+        insert_sorting_post(
+            db,
+            source,
+            "future-far",
+            "Future far deadline",
+            now + timedelta(days=8),
+            now - timedelta(minutes=1),
+        )
+        insert_sorting_post(db, source, "undated", "No deadline", None, now - timedelta(minutes=2))
+        insert_sorting_post(
+            db,
+            source,
+            "future-near",
+            "Future near deadline",
+            now + timedelta(days=2),
+            now - timedelta(minutes=3),
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.get("/api/posts", params={"sort": "deadline", "limit": 10})
+    response.raise_for_status()
+    payload = response.json()
+
+    assert payload["total"] == 4
+    assert [item["title"] for item in payload["items"]] == [
+        "Future near deadline",
+        "Future far deadline",
+        "Expired deadline",
+        "No deadline",
+    ]
 
 
 def test_sync_job_reports_discard_counts(tmp_path: Path):

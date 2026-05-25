@@ -33,6 +33,7 @@ This file is the repository index-management document.
 | `docs/backend-rebuild/rebuild-constraints.md` | active | rebuild constraints |
 | `docs/backend-rebuild/reuse-decision-table.md` | active | migration decision notes |
 | `docs/backend-rebuild/planning-memory.md` | active | working memory |
+| `docs/backend-rebuild/deployment-notes.md` | active | deployment lessons and live verification checklist |
 | `docs/archive/README.md` | active | archive semantics |
 
 ## Removed As Obsolete
