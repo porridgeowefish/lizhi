@@ -35,8 +35,26 @@ def _configure_sqlite(engine) -> None:
 def build_session_factory(settings: Settings) -> tuple[object, sessionmaker[Session]]:
     engine = build_engine(settings)
     Base.metadata.create_all(bind=engine)
+    _ensure_schema_columns(engine)
     _drop_legacy_tables(engine)
     return engine, sessionmaker(bind=engine, autoflush=False, autocommit=False)
+
+
+def _ensure_schema_columns(engine) -> None:
+    inspector = inspect(engine)
+    existing_tables = set(inspector.get_table_names())
+    if "sources" not in existing_tables:
+        return
+
+    source_columns = {column["name"] for column in inspector.get_columns("sources")}
+    missing_source_columns = {
+        "last_seen_published_at": "DATETIME",
+        "last_seen_upstream_post_id": "VARCHAR(255) DEFAULT ''",
+    }
+    with engine.begin() as connection:
+        for column_name, column_type in missing_source_columns.items():
+            if column_name not in source_columns:
+                connection.execute(text(f"ALTER TABLE sources ADD COLUMN {column_name} {column_type}"))
 
 
 def _drop_legacy_tables(engine) -> None:

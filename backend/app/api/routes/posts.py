@@ -46,12 +46,19 @@ def list_posts(
 
 @router.get("/categories", response_model=CategoryStatsResponse)
 def category_stats(request: Request, db: Session = Depends(get_db)):
-    categories, content_type_stats, participation_stats, time_status_stats = request.app.state.query_service.get_category_stats(db)
+    (
+        categories,
+        content_type_stats,
+        participation_stats,
+        time_status_stats,
+        time_unknown_breakdown,
+    ) = request.app.state.query_service.get_category_stats(db)
     return CategoryStatsResponse(
         categories=categories,
         content_type_stats=content_type_stats,
         participation_stats=participation_stats,
         time_status_stats=time_status_stats,
+        time_unknown_breakdown=time_unknown_breakdown,
     )
 
 

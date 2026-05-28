@@ -1,4 +1,6 @@
 <template>
+  <AdminStatus v-if="isAdminStatus" />
+  <template v-else>
   <div class="garden-canvas">
     <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -219,9 +221,9 @@
             </div>
             <h3>{{ post.llm_title || post.title }}</h3>
             <p class="summary">{{ post.llm_summary || post.summary }}</p>
-            <div class="post-bottom" v-if="post.deadline_at || post.source_name">
-              <span class="deadline-tag" v-if="post.deadline_at" :class="'deadline-' + deadlineTone(post.deadline_at)">
-                {{ deadlineLabel(post.deadline_at) }} · {{ t.deadline }} {{ formatDate(post.deadline_at) }}
+            <div class="post-bottom" v-if="post.key_time_at || post.source_name">
+              <span class="deadline-tag" v-if="post.key_time_at" :class="'deadline-' + keyTimeTone(post)">
+                {{ keyTimeLabel(post) }} - {{ keyTimeName(post) }} {{ formatDate(post.key_time_at) }}
               </span>
               <span class="source-tag">{{ post.source_name }}</span>
             </div>
@@ -256,11 +258,13 @@
       <div class="footer-team">{{ t.devTeam }}</div>
     </footer>
   </div>
+  </template>
 </template>
 
 <script>
 import { computed, onMounted, ref } from 'vue'
 import { addSupport, getPostCategories, getPosts, getSupport, syncNow } from './api.js'
+import AdminStatus from './components/AdminStatus.vue'
 
 const I18N = {
   zh: {
@@ -320,7 +324,9 @@ function getSupportClientId() {
 
 export default {
   name: 'App',
+  components: { AdminStatus },
   setup() {
+    const isAdminStatus = window.location.pathname.replace(/\/+$/, '') === '/admin/status'
     const posts = ref([])
     const total = ref(0)
     const stats = ref({ categories: [], content_type_stats: {}, participation_stats: {}, time_status_stats: {} })
@@ -506,6 +512,31 @@ export default {
       return '7天外'
     }
 
+    function keyTimeName(post) {
+      if (post.key_time_type === 'event_start') return lang.value === 'zh' ? '活动' : 'Event'
+      return t.value.deadline
+    }
+    function keyTimeTone(post) {
+      const days = daysUntil(post.key_time_at)
+      if (days === null) return 'muted'
+      if (days < 0) return 'muted'
+      if (days <= 3) return 'urgent'
+      if (days <= 7) return 'soon'
+      return 'later'
+    }
+    function keyTimeLabel(post) {
+      const days = daysUntil(post.key_time_at)
+      const isEvent = post.key_time_type === 'event_start'
+      const action = isEvent
+        ? (lang.value === 'zh' ? '活动' : 'event')
+        : (lang.value === 'zh' ? '截止' : 'due')
+      if (days === null) return keyTimeName(post)
+      if (days < 0) return isEvent ? (lang.value === 'zh' ? '活动已过' : 'Event passed') : (lang.value === 'zh' ? '已截止' : 'Past due')
+      if (days === 0) return isEvent ? (lang.value === 'zh' ? '今天活动' : 'Today') : (lang.value === 'zh' ? '今天截止' : 'Due today')
+      return lang.value === 'zh' ? `距离${action} ${days} 天` : `${days} days to ${action}`
+    }
+
+
     async function loadSupport() {
       try {
         const payload = await getSupport(getSupportClientId())
@@ -536,16 +567,18 @@ export default {
     }
 
     onMounted(async () => {
+      if (isAdminStatus) return
       await Promise.allSettled([loadPosts(), loadStats(), loadSupport()])
       if (!localStorage.getItem('lizhi-guide-done')) { showGuide.value = true }
     })
 
     return {
+      isAdminStatus,
       posts, total, stats, expandedId, loading, loadingMore, syncing, errorMessage,
       draftSearch, activeSearch, filters, lastSyncJob,
       supportCount, supportLiked, supportBusy, supportPulse, supportFloatKey,
       lang, darkMode, t, showGuide, guideStep, guideSteps,
-      categoryOptions, activeFilterChips, syncMetrics, categoryLabel, deadlineTone, deadlineLabel,
+      categoryOptions, activeFilterChips, syncMetrics, categoryLabel, deadlineTone, deadlineLabel, keyTimeTone, keyTimeLabel, keyTimeName,
       toggleLang, toggleDark, dismissGuide, nextGuideStep,
       applyFilters, clearSearch, clearAllFilters, removeFilterChip, setCategory, setSort, setTimeRange, toggleExpand, loadMore, runSync, supportProject, formatDate, hasAnyTime,
     }

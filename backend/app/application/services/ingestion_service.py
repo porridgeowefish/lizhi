@@ -73,6 +73,21 @@ def _parse_llm_datetimes(llm_json_str: str, published_at: datetime | None) -> tu
     )
 
 
+def _parse_publish_time(raw_post: dict) -> datetime | None:
+    publish_time = raw_post.get("publish_time")
+    if isinstance(publish_time, (int, float)):
+        return datetime.fromtimestamp(publish_time, tz=timezone.utc)
+    if isinstance(publish_time, datetime):
+        return publish_time
+    return None
+
+
+def _as_naive(value: datetime | None) -> datetime | None:
+    if value is not None and value.tzinfo is not None:
+        return value.replace(tzinfo=None)
+    return value
+
+
 class IngestionService:
     def __init__(self, session_factory: sessionmaker[Session], connector, settings):
         self.session_factory = session_factory
@@ -171,7 +186,7 @@ class IngestionService:
 
             for source in sources:
                 try:
-                    await self._sync_source(db, job, source, discard_counter)
+                    await self._sync_source(db, job, source, discard_counter, backfill=False)
                     job.sources_synced += 1
                     source.post_count = db.query(func.count(Post.id)).filter(Post.source_id == source.id).scalar() or 0
                     source.last_synced_at = datetime.now(timezone.utc)
@@ -205,15 +220,29 @@ class IngestionService:
 
         return job
 
-    async def _sync_source(self, db: Session, job: SyncJob, source: Source, discard_counter: Counter[str]) -> None:
+    async def _sync_source(
+        self,
+        db: Session,
+        job: SyncJob,
+        source: Source,
+        discard_counter: Counter[str],
+        *,
+        fetch_limit: int | None = None,
+        backfill: bool = False,
+    ) -> None:
         fetch_item = self._start_item(db, job.id, source.id, SyncStage.FETCH_POSTS.value)
+        effective_limit = fetch_limit or (
+            self.settings.post_fetch_limit if backfill else self.settings.incremental_post_fetch_limit
+        )
+        previous_seen_id = (source.last_seen_upstream_post_id or "").strip()
         raw_posts = await self.connector.fetch_posts(
             source_id=source.upstream_source_id,
-            limit=self.settings.post_fetch_limit,
+            limit=effective_limit,
         )
         fetch_item.item_count = len(raw_posts)
         self._finish_item(db, fetch_item, SyncStatus.COMPLETED.value)
         job.posts_fetched += len(raw_posts)
+        self._update_source_high_water(source, raw_posts)
 
         prescreen_item = self._start_item(db, job.id, source.id, SyncStage.PRESCREEN.value)
         store_item = self._start_item(db, job.id, source.id, SyncStage.STORE_RAW_PAYLOAD.value)
@@ -229,11 +258,12 @@ class IngestionService:
         normalized_count = 0
         llm_count = 0
         projected_count = 0
-
         for raw_post in raw_posts:
             upstream_post_id = str(raw_post.get("id") or "").strip()
             if not upstream_post_id:
                 continue
+            if not backfill and previous_seen_id and upstream_post_id == previous_seen_id:
+                break
             existing_post = db.query(Post).filter(Post.upstream_post_id == upstream_post_id).first()
             if existing_post and existing_post.content_status == ContentStatus.MISSING.value:
                 detail = await self._fetch_detail_if_needed(raw_post, upstream_post_id)
@@ -517,11 +547,7 @@ class IngestionService:
         changed: bool,
     ) -> tuple[Post, bool]:
         upstream_post_id = str(raw_post.get("id") or "").strip()
-        publish_time = raw_post.get("publish_time")
-        if isinstance(publish_time, (int, float)):
-            publish_time = datetime.fromtimestamp(publish_time, tz=timezone.utc)
-        elif not isinstance(publish_time, datetime):
-            publish_time = None
+        publish_time = _parse_publish_time(raw_post)
 
         post = db.query(Post).filter(Post.upstream_post_id == upstream_post_id).first()
         created = post is None
@@ -583,6 +609,33 @@ class IngestionService:
         db.add(post)
         db.flush()
         return post, created
+
+    def _update_source_high_water(self, source: Source, raw_posts: list[dict]) -> None:
+        if not raw_posts:
+            return
+
+        latest_post = None
+        latest_published_at = None
+        for raw_post in raw_posts:
+            upstream_post_id = str(raw_post.get("id") or "").strip()
+            if not upstream_post_id:
+                continue
+            published_at = _parse_publish_time(raw_post)
+            if latest_post is None:
+                latest_post = raw_post
+                latest_published_at = published_at
+                continue
+            if published_at is not None and (
+                latest_published_at is None or _as_naive(published_at) > _as_naive(latest_published_at)
+            ):
+                latest_post = raw_post
+                latest_published_at = published_at
+
+        if latest_post is None:
+            return
+        source.last_seen_upstream_post_id = str(latest_post.get("id") or source.last_seen_upstream_post_id or "")
+        if latest_published_at is not None:
+            source.last_seen_published_at = latest_published_at
 
     def _upsert_projection(self, db: Session, post: Post) -> None:
         content_type = classify_content_type(post.title, post.summary, post.content_text_snapshot)

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <radialGradient id="g" cx="40%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#EF5350"/>
+      <stop offset="100%" stop-color="#C62828"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Lychee body - bold scallop, no texture -->
+  <path d="M142.9,101.3 
+Q151.0,112.0 142.9,122.7    Q145.9,135.9 134.4,141.9    Q131.8,155.0 119.1,155.2    Q111.3,165.6 100.0,160.0    Q88.7,165.6 80.9,155.2    Q68.2,155.0 65.6,141.9    Q54.1,135.9 57.1,122.7    Q49.0,112.0 57.1,101.3    Q54.1,88.1 65.6,82.1    Q68.2,69.0 80.9,68.8    Q88.7,58.4 100.0,64.0    Q111.3,58.4 119.1,68.8    Q131.8,69.0 134.4,82.1    Q145.9,88.1 142.9,101.3 Z" fill="url(#g)"/>
+
+  <!-- Highlight -->
+  <ellipse cx="82" cy="92" rx="14" ry="18" fill="white" opacity="0.15"/>
+
+  <!-- Stem -->
+  <path d="M100 64 C99 50 101 38 99 24" stroke="#2E7D32" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+
+  <!-- Leaf -->
+  <path d="M99 28 C89 16 74 12 64 18 C74 22 89 26 99 28Z" fill="#43A047"/>
+  <path d="M99 28 C87 22 74 16 64 18" stroke="#2E7D32" stroke-width="0.5" fill="none" opacity="0.5"/>
+</svg>

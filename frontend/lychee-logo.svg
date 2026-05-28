@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Lychee body - scallop edge, 16 bumps -->
+  <path d="M145.1,102.2 
+Q152.0,112.0 145.1,121.8    Q148.0,133.4 138.2,139.8    Q136.8,151.6 125.6,153.6    Q119.9,163.7 109.0,161.0    Q100.0,168.0 91.0,161.0    Q80.1,163.7 74.4,153.6    Q63.2,151.6 61.8,139.8    Q52.0,133.4 54.9,121.8    Q48.0,112.0 54.9,102.2    Q52.0,90.6 61.8,84.2    Q63.2,72.4 74.4,70.4    Q80.1,60.3 91.0,63.0    Q100.0,56.0 109.0,63.0    Q119.9,60.3 125.6,70.4    Q136.8,72.4 138.2,84.2    Q148.0,90.6 145.1,102.2 Z" fill="#E53935"/>
+
+  <!-- Uniform dot texture -->
+  <g fill="#C62828" opacity="0.3">
+    <circle cx="96" cy="78" r="2.5"/>
+<circle cx="110" cy="78" r="2.5"/>
+<circle cx="75" cy="92" r="2.5"/>
+<circle cx="89" cy="92" r="2.5"/>
+<circle cx="103" cy="92" r="2.5"/>
+<circle cx="117" cy="92" r="2.5"/>
+<circle cx="68" cy="106" r="2.5"/>
+<circle cx="82" cy="106" r="2.5"/>
+<circle cx="96" cy="106" r="2.5"/>
+<circle cx="110" cy="106" r="2.5"/>
+<circle cx="124" cy="106" r="2.5"/>
+<circle cx="75" cy="120" r="2.5"/>
+<circle cx="89" cy="120" r="2.5"/>
+<circle cx="103" cy="120" r="2.5"/>
+<circle cx="117" cy="120" r="2.5"/>
+<circle cx="131" cy="120" r="2.5"/>
+<circle cx="82" cy="134" r="2.5"/>
+<circle cx="96" cy="134" r="2.5"/>
+<circle cx="110" cy="134" r="2.5"/>
+<circle cx="124" cy="134" r="2.5"/>
+  </g>
+
+  <!-- Subtle highlight -->
+  <ellipse cx="84" cy="93" rx="12" ry="16" fill="#EF5350" opacity="0.4"/>
+
+  <!-- Stem -->
+  <path d="M100 62 C99 48 101 36 99 24" stroke="#2E7D32" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+  <!-- Leaf -->
+  <path d="M99 28 C89 16 74 12 64 18 C74 22 89 26 99 28Z" fill="#43A047"/>
+  <path d="M99 28 C87 22 74 16 64 18" stroke="#2E7D32" stroke-width="0.5" fill="none" opacity="0.5"/>
+</svg>

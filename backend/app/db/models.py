@@ -29,6 +29,8 @@ class Source(TimestampMixin, Base):
     intro: Mapped[str] = mapped_column(Text, default="")
     post_count: Mapped[int] = mapped_column(Integer, default=0)
     last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_seen_published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_seen_upstream_post_id: Mapped[str] = mapped_column(String(255), default="")
 
     raw_payloads: Mapped[list["RawPayload"]] = relationship(back_populates="source")
     posts: Mapped[list["Post"]] = relationship(back_populates="source")

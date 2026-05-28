@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 
 from app.db.models import Post, Source, SyncJob, SyncJobItem
 from app.schemas.responses import (
@@ -24,8 +25,45 @@ def _extract_llm_title(post: Post) -> str:
     return post.title
 
 
+def _as_naive(value: datetime | None) -> datetime | None:
+    if value is not None and value.tzinfo is not None:
+        return value.replace(tzinfo=None)
+    return value
+
+
+def _key_time(projection) -> tuple[datetime | None, str]:
+    if projection is None:
+        return None, "none"
+
+    now = datetime.now()
+    candidates = [
+        ("deadline", projection.deadline_at),
+        ("event_start", projection.event_start_at),
+    ]
+    future_candidates = [
+        (key, value)
+        for key, value in candidates
+        if (normalized := _as_naive(value)) is not None and normalized >= now
+    ]
+    if future_candidates:
+        key, value = min(future_candidates, key=lambda item: _as_naive(item[1]))  # type: ignore[arg-type]
+        return value, key
+
+    past_candidates = [
+        (key, value)
+        for key, value in candidates
+        if (normalized := _as_naive(value)) is not None and normalized < now
+    ]
+    if past_candidates:
+        key, value = max(past_candidates, key=lambda item: _as_naive(item[1]))  # type: ignore[arg-type]
+        return value, key
+
+    return None, "none"
+
+
 def serialize_post(post: Post) -> PostItemResponse:
     projection = post.projection
+    key_time_at, key_time_type = _key_time(projection)
     return PostItemResponse(
         id=post.id,
         source_id=post.source_id,
@@ -44,6 +82,8 @@ def serialize_post(post: Post) -> PostItemResponse:
         event_start_at=projection.event_start_at if projection else None,
         event_end_at=projection.event_end_at if projection else None,
         deadline_at=projection.deadline_at if projection else None,
+        key_time_at=key_time_at,
+        key_time_type=key_time_type,
         time_status=projection.time_status if projection else "undated",
         timeliness_level=projection.timeliness_level if projection else "low",
         participation_status=projection.participation_status if projection else "uncertain",
@@ -68,6 +108,8 @@ def serialize_source(source: Source) -> SourceResponse:
         intro=source.intro,
         post_count=source.post_count,
         last_synced_at=source.last_synced_at,
+        last_seen_published_at=source.last_seen_published_at,
+        last_seen_upstream_post_id=source.last_seen_upstream_post_id or "",
     )
 
 

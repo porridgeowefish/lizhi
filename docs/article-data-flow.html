@@ -1,0 +1,786 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>文章数据处理与分发流说明</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f8f4;
+      --panel: #ffffff;
+      --ink: #223127;
+      --muted: #637265;
+      --line: #d8e2d5;
+      --leaf: #4f8a59;
+      --leaf-dark: #2f6841;
+      --tea: #eef6ed;
+      --sun: #f4a261;
+      --warn: #bd4b3f;
+      --blue: #457b9d;
+      --code: #f1f4ef;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      line-height: 1.7;
+    }
+
+    header {
+      background: linear-gradient(135deg, #e7f2e6, #fffaf1);
+      border-bottom: 1px solid var(--line);
+      padding: 44px 24px 34px;
+    }
+
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 28px 24px 64px;
+    }
+
+    .hero {
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    h1, h2, h3 {
+      line-height: 1.25;
+      margin: 0;
+      color: var(--leaf-dark);
+      letter-spacing: 0;
+    }
+
+    h1 {
+      font-size: clamp(30px, 4vw, 52px);
+      margin-bottom: 12px;
+    }
+
+    h2 {
+      font-size: 26px;
+      margin: 46px 0 16px;
+    }
+
+    h3 {
+      font-size: 19px;
+      margin: 26px 0 10px;
+    }
+
+    p { margin: 8px 0 0; }
+    a { color: var(--leaf-dark); }
+
+    .subtitle {
+      max-width: 860px;
+      font-size: 18px;
+      color: var(--muted);
+      margin-top: 10px;
+    }
+
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      border: 1px solid #bfd3bd;
+      border-radius: 999px;
+      padding: 5px 12px;
+      color: var(--leaf-dark);
+      background: rgba(255,255,255,.72);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .toc {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .toc a {
+      display: block;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    section {
+      margin-top: 28px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 8px 24px rgba(54, 82, 55, .06);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .note {
+      border-left: 4px solid var(--leaf);
+      background: var(--tea);
+      padding: 14px 16px;
+      border-radius: 6px;
+      margin: 14px 0 0;
+    }
+
+    .warning {
+      border-left-color: var(--warn);
+      background: #fff0ed;
+    }
+
+    .number {
+      color: var(--sun);
+      font-size: 30px;
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 6px;
+    }
+
+    ul, ol {
+      margin: 10px 0 0 22px;
+      padding: 0;
+    }
+
+    li + li { margin-top: 6px; }
+
+    code {
+      background: var(--code);
+      border: 1px solid #e0e5dd;
+      border-radius: 5px;
+      padding: 1px 5px;
+      font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      font-size: .92em;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      text-align: left;
+    }
+
+    th {
+      background: #eef6ed;
+      color: var(--leaf-dark);
+      font-weight: 800;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+
+    .diagram {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      margin-top: 14px;
+      overflow-x: auto;
+    }
+
+    .mermaid {
+      min-width: 760px;
+    }
+
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .legend div {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: #fff;
+    }
+
+    .kicker {
+      color: var(--leaf);
+      font-weight: 800;
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: .08em;
+      margin-bottom: 8px;
+    }
+
+    @media (max-width: 700px) {
+      header { padding: 30px 18px 26px; }
+      main { padding: 20px 16px 48px; }
+      .panel { padding: 16px; }
+      .mermaid { min-width: 640px; }
+      table { font-size: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="hero">
+      <div class="kicker">Campus Opportunity Pipeline</div>
+      <h1>文章数据处理与分发流说明</h1>
+      <p class="subtitle">
+        这份页面解释当前系统如何从微信公众号聚合源拿文章，如何入库、初筛、补正文、交给 LLM 提取关键时间，
+        以及最终为什么某些文章会出现在首页“机会列表”里。它面向新加入项目的人，也面向需要排查线上数据波动的人。
+      </p>
+      <div class="meta-row">
+        <span class="badge">默认同步：增量模式</span>
+        <span class="badge">历史补库：显式 backfill</span>
+        <span class="badge">首页：默认可见口径</span>
+        <span class="badge">监控：/api/jobs/ingestion-health</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <nav class="toc" aria-label="目录">
+      <a href="#overview">1. 总览</a>
+      <a href="#sync">2. 采集与增量同步</a>
+      <a href="#normalize">3. 入库、初筛与投影</a>
+      <a href="#queues">4. 正文与 LLM 队列</a>
+      <a href="#distribution">5. 首页分发与排序</a>
+      <a href="#ops">6. 运维排查视角</a>
+    </nav>
+
+    <section id="overview">
+      <h2>1. 总览</h2>
+      <div class="panel">
+        <p>
+          系统不是直接把上游文章原样展示到首页。它会先把公众号源、原始文章、清洗后的文章、分类与时间信息分开存储。
+          首页只读后端 API 的分页结果，旁边的总数来自后端计算，不是前端本地统计。
+        </p>
+        <div class="diagram">
+          <pre class="mermaid">
+flowchart LR
+  subgraph Upstream["上游 WeRSS / 微信公众号聚合服务"]
+    U1["公众号源列表"]
+    U2["公众号文章列表"]
+    U3["文章详情 / 正文"]
+  end
+
+  subgraph Backend["后端服务"]
+    API["FastAPI API"]
+    Q["job_queue<br/>刷新 / 同步 / 正文 / LLM"]
+    RW["refresh_worker"]
+    CW["content_worker"]
+    LW["llm_worker"]
+    ING["IngestionService<br/>清洗、初筛、投影"]
+    QS["QueryService<br/>列表筛选与排序"]
+  end
+
+  subgraph DB["SQLite 数据库"]
+    S["sources<br/>源与高水位"]
+    P["posts<br/>文章主体"]
+    PP["post_projections<br/>分类、时间、展示权重"]
+    RP["raw_payloads<br/>原始上游载荷"]
+    DP["discarded_posts<br/>初筛丢弃记录"]
+    J["sync_jobs / sync_job_items<br/>同步审计"]
+  end
+
+  subgraph Client["前端首页"]
+    FE["App.vue<br/>分页请求 /api/posts"]
+  end
+
+  API --> Q
+  Q --> RW
+  RW --> U1
+  RW --> U2
+  RW --> ING
+  ING --> S
+  ING --> P
+  ING --> PP
+  ING --> RP
+  ING --> DP
+  ING --> J
+  Q --> CW
+  CW --> U3
+  CW --> P
+  Q --> LW
+  LW --> P
+  LW --> PP
+  FE --> API
+  API --> QS
+  QS --> P
+  QS --> PP
+          </pre>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="panel">
+          <div class="number">1</div>
+          <h3>采集层</h3>
+          <p>负责刷新公众号源、抓文章列表、抓缺失正文。它关心“有没有新文章”和“正文是否完整”。</p>
+        </div>
+        <div class="panel">
+          <div class="number">2</div>
+          <h3>理解层</h3>
+          <p>规则和 LLM 共同提取文章类型、分类、活动开始时间、截止时间、参与状态等结构化信息。</p>
+        </div>
+        <div class="panel">
+          <div class="number">3</div>
+          <h3>分发层</h3>
+          <p>首页不展示全库，而是按默认可见口径、分类筛选、关键时间排序后分页返回。</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="sync">
+      <h2>2. 采集与增量同步</h2>
+      <div class="panel">
+        <p>
+          当前系统有两种同步模式：默认的 <code>incremental</code> 和显式的 <code>backfill</code>。
+          默认同步只看一个小窗口，用高水位判断“从哪里开始已经见过”；历史补库必须通过 <code>POST /api/jobs/backfill</code> 显式触发。
+        </p>
+
+        <div class="diagram">
+          <pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant Timer as systemd timer
+  participant Enqueue as enqueue_refresh_jobs
+  participant Queue as job_queue
+  participant Worker as refresh_worker
+  participant Upstream as WeRSS
+  participant Ingest as IngestionService
+  participant DB as SQLite
+
+  Timer->>Enqueue: 每小时触发
+  Enqueue->>Queue: 为 enabled sources 入队 REFRESH_SOURCE
+  Timer->>Worker: 每 2 分钟触发，limit=10
+  Worker->>Queue: claim REFRESH_SOURCE / SYNC_SOURCE_POSTS
+  Worker->>Upstream: refresh_source(source, page 0..10)
+  Worker->>Queue: 入队 SYNC_SOURCE_POSTS mode=incremental limit=100
+  Worker->>Upstream: fetch_posts(source, limit<=100)
+  Worker->>Ingest: _sync_source(backfill=false)
+  Ingest->>DB: 读取 source 高水位
+  loop 从新到旧处理文章
+  Ingest->>Ingest: 遇到 last_seen_upstream_post_id 就停止
+  Ingest->>Ingest: 不按固定天数截断低频公众号
+    Ingest->>DB: upsert post / projection / raw payload
+  end
+  Ingest->>DB: 更新 last_seen_published_at / last_seen_upstream_post_id
+          </pre>
+        </div>
+
+        <h3>高水位字段是什么</h3>
+        <p>
+          高水位就是每个公众号源的同步书签。系统在 <code>sources</code> 表记录
+          <code>last_seen_upstream_post_id</code> 和 <code>last_seen_published_at</code>。
+          下一次同步时，如果文章列表里再次遇到这个已见文章，就知道后面大概率都是旧文章，可以停止继续处理。
+        </p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>字段 / 配置</th>
+              <th>当前作用</th>
+              <th>默认值或来源</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>last_seen_upstream_post_id</code></td>
+              <td>源级别文章书签，遇到它就停止继续向旧文章扫描。</td>
+              <td><code>sources</code> 表</td>
+            </tr>
+            <tr>
+              <td><code>last_seen_published_at</code></td>
+              <td>源级别最新发布时间记录，用于理解同步进度和辅助排查。</td>
+              <td><code>sources</code> 表</td>
+            </tr>
+            <tr>
+              <td><code>BACKEND_INCREMENTAL_POST_FETCH_LIMIT</code></td>
+              <td>默认增量同步每个源最多抓多少条文章。</td>
+              <td><code>100</code></td>
+            </tr>
+            <tr>
+              <td><code>BACKEND_POST_FETCH_LIMIT</code></td>
+              <td>显式 backfill 的默认大窗口，不用于普通增量刷新。</td>
+              <td><code>500</code></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="note warning">
+          <strong>为什么之前会突然回灌历史文章：</strong>
+          旧逻辑接近“每个源拉最近 500 条，没见过就插入”。队列恢复或提速后，很多此前没完整覆盖的源被一次性同步，于是历史窗口里的文章一起入库。
+          现在默认路径已经变成小窗口增量，历史补库被隔离到显式 backfill。
+        </div>
+      </div>
+    </section>
+
+    <section id="normalize">
+      <h2>3. 入库、初筛与投影</h2>
+      <div class="panel">
+        <p>
+          文章列表进入后，不会立刻变成首页卡片。系统先做规则初筛，保存原始载荷，再抽取正文、分类、时间和展示层级。
+          真正支撑首页排序的主要是 <code>post_projections</code> 表。
+        </p>
+
+        <div class="diagram">
+          <pre class="mermaid">
+flowchart TD
+  A["上游 raw_post"] --> B{"是否有 upstream_post_id"}
+  B -- 否 --> X["跳过"]
+  B -- 是 --> C["查 posts 是否已有"]
+  C --> D["标题/摘要/来源/正文摘要初筛"]
+  D -->|命中宣传稿、回顾、乱码等| E["写 discarded_posts<br/>如有正文则补给旧 post"]
+  D -->|通过| F["写 raw_payloads"]
+  F --> G["必要时 fetch_post_detail"]
+  G --> H["正文二次初筛"]
+  H -->|丢弃| E
+  H -->|通过| I["计算 content_hash"]
+  I --> J["upsert posts<br/>title / summary / content / llm_status"]
+  J --> K["规则分类 PostCategory"]
+  K --> L["生成 PostProjection"]
+  L --> M["content_type / primary_category / event_start_at / deadline_at / display_level"]
+          </pre>
+        </div>
+
+        <h3>核心表之间的关系</h3>
+        <div class="diagram">
+          <pre class="mermaid">
+classDiagram
+  class Source {
+    id
+    upstream_source_id
+    name
+    status
+    post_count
+    last_synced_at
+    last_seen_published_at
+    last_seen_upstream_post_id
+  }
+  class Post {
+    id
+    upstream_post_id
+    source_id
+    title
+    summary
+    published_at
+    content_status
+    llm_status
+    content_hash
+  }
+  class PostProjection {
+    post_id
+    primary_category
+    content_type
+    event_start_at
+    event_end_at
+    deadline_at
+    time_status
+    timeliness_level
+    display_level
+  }
+  class PostCategory {
+    post_id
+    category_code
+    category_source
+  }
+  class RawPayload {
+    source_id
+    upstream_post_id
+    payload_hash
+  }
+  class DiscardedPost {
+    upstream_post_id
+    discard_reason
+    discard_stage
+  }
+  class JobQueue {
+    job_type
+    dedupe_key
+    status
+    priority
+    payload_json
+  }
+
+  Source "1" --> "*" Post
+  Post "1" --> "1" PostProjection
+  Post "1" --> "*" PostCategory
+  Source "1" --> "*" RawPayload
+  Source "1" --> "*" DiscardedPost
+  JobQueue ..> Post : payload.post_id
+          </pre>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>概念</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>posts</code></td>
+              <td>文章主体：标题、摘要、发布时间、正文快照、LLM 状态。</td>
+            </tr>
+            <tr>
+              <td><code>post_projections</code></td>
+              <td>给列表分发用的投影：分类、内容类型、活动开始、截止时间、展示级别、时效状态。</td>
+            </tr>
+            <tr>
+              <td><code>raw_payloads</code></td>
+              <td>上游原始 JSON 的留档，用于追溯和重新解析。</td>
+            </tr>
+            <tr>
+              <td><code>discarded_posts</code></td>
+              <td>初筛丢弃记录，不进入普通文章列表，但保留丢弃原因。</td>
+            </tr>
+            <tr>
+              <td><code>sync_jobs</code></td>
+              <td>每次同步的审计记录：抓取、插入、更新、丢弃数量。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="queues">
+      <h2>4. 正文与 LLM 队列</h2>
+      <div class="panel">
+        <p>
+          同步文章列表时，有些文章没有正文，或者需要 LLM 进一步提取时间与摘要。这两件事不直接阻塞列表同步，
+          而是通过 <code>job_queue</code> 异步处理。
+        </p>
+
+        <div class="diagram">
+          <pre class="mermaid">
+stateDiagram-v2
+  [*] --> NotQueued: 文章入库
+  NotQueued --> FetchContentQueued: content_status=missing 且队列资格通过
+  FetchContentQueued --> ContentReady: content_worker 抓到正文
+  FetchContentQueued --> FetchDead: 上游删除 / 空正文 / 超过重试
+  ContentReady --> LlmQueued: LLM 开启且队列资格通过
+  NotQueued --> LlmQueued: 入库时已有正文且需要 LLM
+  LlmQueued --> LlmCompleted: llm_worker 成功
+  LlmQueued --> LlmSkipped: 2022 前或历史无资格
+  LlmQueued --> LlmFailed: LLM 调用失败
+  LlmCompleted --> ProjectionUpdated: 分类/时间覆盖 projection
+  ProjectionUpdated --> [*]
+  FetchDead --> [*]
+  LlmSkipped --> [*]
+  LlmFailed --> [*]
+          </pre>
+        </div>
+
+        <h3>队列资格</h3>
+        <p>
+          现在正文抓取和 LLM 不再无差别处理全库历史文章。只有满足下面任一条件才会继续排队或执行：
+        </p>
+        <ul>
+          <li>发布时间在最近 <code>BACKEND_QUEUE_RECENT_DAYS</code> 天内，默认 30 天。这个字段只影响补正文和 LLM 队列，不影响公众号同步是否继续向下扫描。</li>
+          <li>存在未来 <code>deadline_at</code>。</li>
+          <li>存在未来 <code>event_start_at</code>。</li>
+        </ul>
+        <div class="note">
+          这意味着历史无关键时间文章仍可留在数据库中，但不会继续抢正文抓取和 LLM 资源。低频社团公众号的采集停止点仍然是上一篇已见文章 ID，而不是这个天数阈值。
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Job Type</th>
+              <th>谁创建</th>
+              <th>谁执行</th>
+              <th>作用</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>refresh_source</code></td>
+              <td><code>enqueue_refresh_jobs</code> 或 <code>/api/jobs/refresh</code></td>
+              <td><code>refresh_worker</code></td>
+              <td>刷新上游公众号源，随后创建增量同步任务。</td>
+            </tr>
+            <tr>
+              <td><code>sync_source_posts</code></td>
+              <td><code>refresh_worker</code> 或 <code>/api/jobs/backfill</code></td>
+              <td><code>refresh_worker</code></td>
+              <td>抓文章列表并入库。默认 incremental，显式 backfill 才大窗口。</td>
+            </tr>
+            <tr>
+              <td><code>fetch_content</code></td>
+              <td><code>refresh_worker</code></td>
+              <td><code>content_worker</code></td>
+              <td>为缺正文的文章补正文。</td>
+            </tr>
+            <tr>
+              <td><code>llm_post</code></td>
+              <td><code>refresh_worker</code> / <code>content_worker</code></td>
+              <td><code>llm_worker</code></td>
+              <td>调用 LLM 提取摘要、分类、活动开始、截止时间。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="distribution">
+      <h2>5. 首页分发与排序</h2>
+      <div class="panel">
+        <p>
+          首页调用 <code>GET /api/posts</code>，默认分页：前端第一次取 <code>offset=0&amp;limit=20</code>，
+          加载更多再继续取下一页。机会列表旁边的数字是后端返回的 <code>total</code>，不是前端本地计算。
+        </p>
+
+        <div class="diagram">
+          <pre class="mermaid">
+flowchart TD
+  A["GET /api/posts<br/>sort=deadline"] --> B{"show_all=true?"}
+  B -- 是 --> C["不过默认可见口径<br/>用于全量/排查"]
+  B -- 否 --> D["默认可见口径"]
+  D --> D1["非 hidden display_level"]
+  D --> D2["非 hidden timeliness_level"]
+  D --> D3["published_at >= 2022-01-01 或为空"]
+  D --> D4["有未来关键时间<br/>或近期无关键时间"]
+  C --> E["分类 / 类型 / 时间范围 / 搜索 / 来源筛选"]
+  D4 --> E
+  E --> F{"sort=deadline?"}
+  F -- 是 --> G["关键时间排序"]
+  F -- 否 --> H["发布时间倒序"]
+  G --> I["分页 offset + limit"]
+  H --> I
+  I --> J["返回 items + total"]
+          </pre>
+        </div>
+
+        <h3>关键时间排序规则</h3>
+        <p>
+          <code>sort=deadline</code> 这个名字保留了旧 API，但现在排序看的不是单一截止时间，而是“关键时间”。
+          关键时间只从 <code>deadline_at</code> 和 <code>event_start_at</code> 中选择，二者同权重。
+        </p>
+        <ol>
+          <li>第一组：有未来关键时间的文章，按最近的未来关键时间从近到远。</li>
+          <li>第二组：没有截止时间、没有活动开始时间的文章，按发布时间从早到晚。</li>
+          <li>第三组：关键时间都过期的文章，排最后，按最近过期优先。</li>
+        </ol>
+
+        <div class="diagram">
+          <pre class="mermaid">
+flowchart LR
+  P["一篇文章"] --> A{"deadline_at 未来?"}
+  P --> B{"event_start_at 未来?"}
+  A --> C["候选关键时间"]
+  B --> C
+  C --> D{"有未来候选?"}
+  D -- 是 --> E["key_time_at = 最近未来时间<br/>key_time_type = deadline 或 event_start"]
+  D -- 否 --> F{"有过去 deadline/start?"}
+  F -- 是 --> G["过期组<br/>取最近过去时间"]
+  F -- 否 --> H["无关键时间组<br/>key_time_type=none"]
+          </pre>
+        </div>
+
+        <h3>默认首页为什么少于全库</h3>
+        <p>
+          当前设计刻意把“首页机会列表”与“数据库全量文章”分开。全库可能保留历史文章、已过期文章、无时间文章；
+          首页默认只展示更像机会流的内容。需要排查全库时，用 <code>show_all=true</code>。
+        </p>
+      </div>
+    </section>
+
+    <section id="ops">
+      <h2>6. 运维排查视角</h2>
+      <div class="panel">
+        <p>
+          如果以后又出现“首页数量突然变化”“两天没新文章”“队列积压”等现象，优先看下面几个入口。
+        </p>
+
+        <div class="legend">
+          <div><strong>健康检查</strong><br/><code>GET /api/health</code></div>
+          <div><strong>首页列表</strong><br/><code>GET /api/posts?limit=1</code></div>
+          <div><strong>全库口径</strong><br/><code>GET /api/posts?limit=1&amp;show_all=true</code></div>
+          <div><strong>采集健康</strong><br/><code>GET /api/jobs/ingestion-health</code></div>
+          <div><strong>队列摘要</strong><br/><code>GET /api/jobs/summary</code></div>
+          <div><strong>显式补库</strong><br/><code>POST /api/jobs/backfill</code></div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>现象</th>
+              <th>优先检查</th>
+              <th>如何理解</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>首页总数突然上涨</td>
+              <td><code>/api/jobs/ingestion-health</code> 的 <code>posts_inserted_by_hour_24h</code></td>
+              <td>如果某小时插入很多，说明是后台入库导致；再看 <code>top_sources_inserted_24h</code> 确认来源。</td>
+            </tr>
+            <tr>
+              <td>好像没有新文章</td>
+              <td><code>last_successful_sync</code>、<code>oldest_active_job</code>、<code>queue_by_type_status</code></td>
+              <td>判断是同步没跑、refresh 积压、sync 积压，还是上游本身没有新内容。</td>
+            </tr>
+            <tr>
+              <td>首页比全库少很多</td>
+              <td>对比 <code>/api/posts</code> 与 <code>/api/posts?show_all=true</code></td>
+              <td>这是默认分发口径在生效：历史、过期、老的无时间内容不会全进首页。</td>
+            </tr>
+            <tr>
+              <td>LLM 处理很慢</td>
+              <td><code>llm_post</code> pending 数、LLM worker 日志</td>
+              <td>LLM 是限速慢任务；现在只处理近期或有未来关键时间的候选，避免全库重扫。</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="note">
+          这套结构的核心原则是：<strong>默认路径只稳定抓新文章；历史文章要显式补库；首页展示机会流，不等于全库文章列表。</strong>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: "loose",
+      theme: "base",
+      themeVariables: {
+        primaryColor: "#eef6ed",
+        primaryTextColor: "#223127",
+        primaryBorderColor: "#8fb88f",
+        lineColor: "#6c8f6d",
+        secondaryColor: "#fffaf1",
+        tertiaryColor: "#ffffff",
+        fontFamily: "-apple-system, BlinkMacSystemFont, Segoe UI, Microsoft YaHei, sans-serif"
+      }
+    });
+  </script>
+</body>
+</html>

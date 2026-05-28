@@ -107,7 +107,7 @@ write_worker_units() {
   write_worker_unit "${REFRESH_ENQUEUE_SERVICE}" "Campus Opportunity enqueue refresh jobs" "enqueue-refresh" "app.workers.enqueue_refresh_jobs" ""
   write_worker_timer "${REFRESH_ENQUEUE_TIMER}" "${REFRESH_ENQUEUE_SERVICE}" "Campus Opportunity enqueue refresh jobs timer" "5min" "60min"
 
-  write_worker_unit "${REFRESH_WORKER_SERVICE}" "Campus Opportunity refresh worker" "refresh-worker" "app.workers.refresh_worker" "--limit 2"
+  write_worker_unit "${REFRESH_WORKER_SERVICE}" "Campus Opportunity refresh worker" "refresh-worker" "app.workers.refresh_worker" "--limit 10"
   write_worker_timer "${REFRESH_WORKER_TIMER}" "${REFRESH_WORKER_SERVICE}" "Campus Opportunity refresh worker timer" "6min" "2min"
 
   write_worker_unit "${CONTENT_WORKER_SERVICE}" "Campus Opportunity content worker" "content-worker" "app.workers.content_worker" "--limit 5"
@@ -164,6 +164,7 @@ BACKEND_PORT=8002
 BACKEND_DATABASE_URL=sqlite:///${DATA_DIR}/backend.db
 BACKEND_SYNC_INTERVAL_MINUTES=10
 BACKEND_POST_FETCH_LIMIT=500
+BACKEND_INCREMENTAL_POST_FETCH_LIMIT=100
 BACKEND_SOURCE_FETCH_LIMIT=500
 BACKEND_ENABLE_SCHEDULER=false
 BACKEND_UPSTREAM_REFRESH_ENABLED=true
@@ -188,10 +189,13 @@ BACKEND_LLM_WORKER_INTERVAL_SECONDS=20
 BACKEND_LLM_WORKER_BATCH_SIZE=2
 BACKEND_LLM_WORKER_MAX_ATTEMPTS=3
 BACKEND_CONTENT_WORKER_BATCH_SIZE=5
+BACKEND_QUEUE_RECENT_DAYS=30
+BACKEND_HOMEPAGE_RECENT_UNDATED_DAYS=90
 EOF
     echo "Created ${REMOTE_ENV_PATH}. Fill in upstream and LLM credentials before syncing production data."
   fi
   ensure_min_int_env BACKEND_POST_FETCH_LIMIT 500
+  ensure_env_default BACKEND_INCREMENTAL_POST_FETCH_LIMIT 100
   ensure_min_int_env BACKEND_SOURCE_FETCH_LIMIT 500
   set_env_value BACKEND_ENABLE_SCHEDULER false
   ensure_bool_env BACKEND_UPSTREAM_REFRESH_ENABLED true
@@ -206,6 +210,8 @@ EOF
   ensure_max_int_env BACKEND_LLM_WORKER_BATCH_SIZE 2
   ensure_min_int_env BACKEND_LLM_WORKER_MAX_ATTEMPTS 3
   ensure_min_int_env BACKEND_CONTENT_WORKER_BATCH_SIZE 5
+  ensure_env_default BACKEND_QUEUE_RECENT_DAYS 30
+  ensure_env_default BACKEND_HOMEPAGE_RECENT_UNDATED_DAYS 90
 }
 
 set_env_value() {

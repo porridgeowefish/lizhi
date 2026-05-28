@@ -11,6 +11,15 @@ export const getPost = (id) =>
 export const getPostCategories = () =>
   api.get('/posts/categories').then((r) => r.data)
 
+export const getHealth = () =>
+  api.get('/health').then((r) => r.data)
+
+export const getJobSummary = () =>
+  api.get('/jobs/summary').then((r) => r.data)
+
+export const getIngestionHealth = () =>
+  api.get('/jobs/ingestion-health').then((r) => r.data)
+
 export const getSources = () =>
   api.get('/sources').then((r) => r.data)
 

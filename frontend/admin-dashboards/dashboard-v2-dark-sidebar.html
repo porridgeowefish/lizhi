@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Campus Ops - Admin</title>
+<style>
+/* ========== Reset & Base ========== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: #f9fafb;
+  color: #111827;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ========== Sidebar ========== */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 200px;
+  height: 100vh;
+  background: #1f2937;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  overflow-y: auto;
+}
+
+.sidebar-brand {
+  padding: 20px 16px;
+  border-bottom: 1px solid #374151;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+}
+
+.sidebar-brand small {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  color: #9ca3af;
+  margin-top: 2px;
+}
+
+.sidebar-nav {
+  padding: 8px 0;
+  flex: 1;
+}
+
+.sidebar-nav a {
+  display: block;
+  padding: 10px 16px;
+  color: #d1d5db;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  border-left: 3px solid transparent;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.sidebar-nav a:hover {
+  background: #374151;
+  color: #fff;
+}
+
+.sidebar-nav a.active {
+  background: #111827;
+  color: #fff;
+  border-left-color: #3b82f6;
+}
+
+.sidebar-footer {
+  padding: 12px 16px;
+  border-top: 1px solid #374151;
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.sidebar-footer .conn-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 0;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.sidebar-footer .conn-dot.ok { background: #10b981; }
+.sidebar-footer .conn-dot.err { background: #f43f5e; }
+.sidebar-footer .conn-dot.warn { background: #f59e0b; }
+
+/* ========== Main Content ========== */
+.main {
+  margin-left: 200px;
+  min-height: 100vh;
+  padding: 0;
+}
+
+/* ========== Header ========== */
+.page-header {
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.page-header h1 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.page-header-meta {
+  font-size: 12px;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.page-header-meta .status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border: 1px solid;
+}
+
+.status-badge.ok { color: #059669; border-color: #a7f3d0; background: #ecfdf5; }
+.status-badge.degraded { color: #d97706; border-color: #fde68a; background: #fffbeb; }
+.status-badge.error { color: #dc2626; border-color: #fecaca; background: #fef2f2; }
+
+.status-badge .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 0;
+}
+
+.status-badge.ok .dot { background: #10b981; }
+.status-badge.degraded .dot { background: #f59e0b; }
+.status-badge.error .dot { background: #ef4444; }
+
+/* ========== Content Area ========== */
+.content {
+  padding: 24px;
+}
+
+/* ========== Section ========== */
+.section {
+  margin-bottom: 24px;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* ========== Card ========== */
+.card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0;
+  padding: 16px;
+}
+
+.card-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.card-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.card-value.success { color: #059669; }
+.card-value.warning { color: #d97706; }
+.card-value.danger { color: #dc2626; }
+.card-value.info { color: #2563eb; }
+
+/* ========== KPI Row ========== */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+/* ========== Table ========== */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.data-table th {
+  text-align: left;
+  padding: 8px 12px;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #6b7280;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.data-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #f3f4f6;
+  color: #374151;
+}
+
+.data-table tr:last-child td {
+  border-bottom: none;
+}
+
+.data-table .num {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-align: right;
+}
+
+/* ========== Badge ========== */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.badge-green { background: #d1fae5; color: #065f46; }
+.badge-red { background: #fee2e2; color: #991b1b; }
+.badge-amber { background: #fef3c7; color: #92400e; }
+.badge-blue { background: #dbeafe; color: #1e40af; }
+.badge-gray { background: #f3f4f6; color: #374151; }
+
+/* ========== Bar Chart (CSS) ========== */
+.bar-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bar-label {
+  width: 50px;
+  font-size: 11px;
+  color: #6b7280;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.bar-track {
+  flex: 1;
+  height: 18px;
+  background: #f3f4f6;
+  position: relative;
+}
+
+.bar-fill {
+  height: 100%;
+  background: #3b82f6;
+  transition: width 0.6s ease;
+  min-width: 2px;
+}
+
+.bar-count {
+  width: 30px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #374151;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+/* ========== Content Stats Row ========== */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.stats-row .card {
+  padding: 12px;
+}
+
+.stats-row .card h3 {
+  font-size: 11px;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 13px;
+}
+
+.stat-item .stat-key { color: #6b7280; }
+.stat-item .stat-val { font-weight: 600; color: #111827; font-variant-numeric: tabular-nums; }
+
+/* ========== Loading ========== */
+.loading {
+  color: #9ca3af;
+  font-size: 12px;
+  padding: 8px 0;
+}
+
+.loading::after {
+  content: '';
+  animation: dots 1.2s infinite;
+}
+
+@keyframes dots {
+  0% { content: ''; }
+  25% { content: '.'; }
+  50% { content: '..'; }
+  75% { content: '...'; }
+}
+
+/* ========== Responsive ========== */
+@media (max-width: 1024px) {
+  .kpi-row { grid-template-columns: repeat(2, 1fr); }
+  .stats-row { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+  .sidebar { width: 160px; }
+  .main { margin-left: 160px; }
+  .kpi-row { grid-template-columns: 1fr 1fr; }
+  .content { padding: 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ========== Sidebar ========== -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    Campus Ops
+    <small>Admin Dashboard</small>
+  </div>
+  <div class="sidebar-nav">
+    <a href="#kpi" data-nav="kpi" class="active">Health</a>
+    <a href="#queue" data-nav="queue">Queue</a>
+    <a href="#pipeline" data-nav="pipeline">Pipeline</a>
+    <a href="#activity" data-nav="activity">Activity</a>
+    <a href="#content" data-nav="content">Content</a>
+  </div>
+  <div class="sidebar-footer" id="sidebarFooter">
+    <span class="conn-dot ok" id="sidebarDot"></span>
+    <span id="sidebarStatus">Connecting...</span>
+  </div>
+</nav>
+
+<!-- ========== Main ========== -->
+<div class="main">
+  <!-- Header -->
+  <div class="page-header">
+    <h1>Campus Ops</h1>
+    <div class="page-header-meta">
+      <span class="status-badge ok" id="headerBadge">
+        <span class="dot"></span>
+        <span id="headerStatusText">Loading</span>
+      </span>
+      <span id="lastUpdated">--</span>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- KPI Cards -->
+    <div class="section" id="kpi">
+      <div class="section-title">Key Metrics</div>
+      <div class="kpi-row">
+        <div class="card">
+          <div class="card-label">Total Posts</div>
+          <div class="card-value" id="kpiPosts">--</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Queue Pending</div>
+          <div class="card-value warning" id="kpiPending">--</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Total Likes</div>
+          <div class="card-value danger" id="kpiLikes">--</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Active Sources</div>
+          <div class="card-value info" id="kpiSources">--</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Queue Status -->
+    <div class="section" id="queue">
+      <div class="section-title">Queue Status</div>
+      <div class="card" style="padding:0; overflow:hidden;">
+        <table class="data-table">
+          <thead>
+            <tr><th>Status</th><th style="text-align:right">Count</th></tr>
+          </thead>
+          <tbody id="queueBody">
+            <tr><td colspan="2" class="loading">Loading</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pipeline Breakdown -->
+    <div class="section" id="pipeline">
+      <div class="section-title">Pipeline Breakdown</div>
+      <div class="card" style="padding:0; overflow:hidden;">
+        <table class="data-table">
+          <thead>
+            <tr><th>Job Type</th><th class="num">Pending</th><th class="num">Running</th><th class="num">Succeeded</th><th class="num">Failed</th></tr>
+          </thead>
+          <tbody id="pipelineBody">
+            <tr><td colspan="5" class="loading">Loading</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 24h Activity -->
+    <div class="section" id="activity">
+      <div class="section-title">24h Activity</div>
+      <div class="card" id="activityCard">
+        <div class="loading">Loading</div>
+      </div>
+    </div>
+
+    <!-- Top Sources -->
+    <div class="section" id="sources">
+      <div class="section-title">Top Sources (24h)</div>
+      <div class="card" style="padding:0; overflow:hidden;">
+        <table class="data-table">
+          <thead>
+            <tr><th style="width:40px">Rank</th><th>Source</th><th class="num">Posts</th></tr>
+          </thead>
+          <tbody id="sourcesBody">
+            <tr><td colspan="3" class="loading">Loading</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Content Stats -->
+    <div class="section" id="content">
+      <div class="section-title">Content Stats</div>
+      <div class="stats-row">
+        <div class="card">
+          <h3>Content Type</h3>
+          <div id="contentTypeStats"><div class="loading">Loading</div></div>
+        </div>
+        <div class="card">
+          <h3>Participation</h3>
+          <div id="participationStats"><div class="loading">Loading</div></div>
+        </div>
+        <div class="card">
+          <h3>Time Status</h3>
+          <div id="timeStatusStats"><div class="loading">Loading</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ========== Config ==========
+const API_BASE = 'http://localhost:8000';
+const POLL_MS = 30000;
+
+// ========== State ==========
+let pollTimer = null;
+
+// ========== Helpers ==========
+function $(sel) { return document.querySelector(sel); }
+
+function esc(str) {
+  var div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function animateNum(el, target) {
+  var start = parseInt(el.textContent) || 0;
+  if (start === target) { el.textContent = target; return; }
+  var startTime = performance.now();
+  var dur = 600;
+  function tick(now) {
+    var p = Math.min((now - startTime) / dur, 1);
+    var eased = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(start + (target - start) * eased);
+    if (p < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+async function fetchJSON(url) {
+  try {
+    var resp = await fetch(url);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    return await resp.json();
+  } catch(e) {
+    console.warn('Fetch failed:', url, e);
+    return null;
+  }
+}
+
+// ========== Sidebar Scroll Spy ==========
+function initNav() {
+  var links = document.querySelectorAll('.sidebar-nav a');
+  links.forEach(function(link) {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      var target = document.querySelector(this.getAttribute('href'));
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      links.forEach(function(l) { l.classList.remove('active'); });
+      this.classList.add('active');
+    });
+  });
+
+  // Scroll spy
+  var sections = ['kpi', 'queue', 'pipeline', 'activity', 'content'];
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        var id = entry.target.id;
+        links.forEach(function(l) {
+          l.classList.toggle('active', l.getAttribute('data-nav') === id);
+        });
+      }
+    });
+  }, { rootMargin: '-80px 0px -60% 0px', threshold: 0 });
+
+  sections.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) observer.observe(el);
+  });
+}
+
+// ========== Renderers ==========
+
+function renderHeaderStatus(health) {
+  var badge = $('#headerBadge');
+  var text = $('#headerStatusText');
+  var dot = $('#sidebarDot');
+  var sStatus = $('#sidebarStatus');
+
+  badge.className = 'status-badge';
+  dot.className = 'conn-dot';
+
+  if (!health) {
+    badge.classList.add('error');
+    text.textContent = 'Unreachable';
+    dot.classList.add('err');
+    sStatus.textContent = 'Offline';
+    return;
+  }
+
+  var s = health.status || 'unknown';
+  if (s === 'ok') {
+    badge.classList.add('ok');
+    dot.classList.add('ok');
+  } else if (s === 'degraded') {
+    badge.classList.add('degraded');
+    dot.classList.add('warn');
+  } else {
+    badge.classList.add('error');
+    dot.classList.add('err');
+  }
+  text.textContent = s.charAt(0).toUpperCase() + s.slice(1);
+  sStatus.textContent = 'DB: ' + (health.database || '--');
+}
+
+function renderKPI(queue, support, ingestion, categories) {
+  // Total Posts from categories content_type_stats sum
+  var totalPosts = 0;
+  if (categories && categories.content_type_stats) {
+    Object.values(categories.content_type_stats).forEach(function(v) { totalPosts += v; });
+  }
+  animateNum($('#kpiPosts'), totalPosts);
+
+  // Queue pending
+  var pending = queue ? (queue.pending || 0) : 0;
+  animateNum($('#kpiPending'), pending);
+
+  // Total likes
+  var likes = support ? (support.count || 0) : 0;
+  animateNum($('#kpiLikes'), likes);
+
+  // Active sources
+  var sources = ingestion ? (ingestion.sources_enabled || 0) : 0;
+  animateNum($('#kpiSources'), sources);
+}
+
+function renderQueue(queue) {
+  var tbody = $('#queueBody');
+  if (!queue) {
+    tbody.innerHTML = '<tr><td colspan="2" class="loading">No data</td></tr>';
+    return;
+  }
+
+  var rows = [
+    { status: 'Pending', count: queue.pending || 0, badge: 'badge-amber' },
+    { status: 'Running', count: queue.running || 0, badge: 'badge-blue' },
+    { status: 'Succeeded', count: queue.succeeded || 0, badge: 'badge-green' },
+    { status: 'Failed', count: queue.failed || 0, badge: 'badge-red' },
+    { status: 'Dead', count: queue.dead || 0, badge: 'badge-gray' },
+    { status: 'Cancelled', count: queue.cancelled || 0, badge: 'badge-gray' },
+  ];
+
+  tbody.innerHTML = rows.map(function(r) {
+    return '<tr>' +
+      '<td><span class="badge ' + r.badge + '">' + r.status + '</span></td>' +
+      '<td class="num">' + r.count + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function renderPipeline(ingestion) {
+  var tbody = $('#pipelineBody');
+  if (!ingestion || !ingestion.queue_by_type_status) {
+    tbody.innerHTML = '<tr><td colspan="5" class="loading">No data</td></tr>';
+    return;
+  }
+
+  // Aggregate: group by job_type, then by status
+  var types = {};
+  ingestion.queue_by_type_status.forEach(function(r) {
+    if (!types[r.job_type]) types[r.job_type] = { pending: 0, running: 0, succeeded: 0, failed: 0 };
+    var s = r.status || 'pending';
+    if (types[r.job_type].hasOwnProperty(s)) {
+      types[r.job_type][s] += r.count;
+    } else {
+      // Map unknown statuses
+      types[r.job_type].pending += r.count;
+    }
+  });
+
+  var html = '';
+  Object.entries(types).forEach(function(pair) {
+    var name = pair[0].replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+    var d = pair[1];
+    html += '<tr>' +
+      '<td>' + esc(name) + '</td>' +
+      '<td class="num">' + d.pending + '</td>' +
+      '<td class="num">' + d.running + '</td>' +
+      '<td class="num">' + d.succeeded + '</td>' +
+      '<td class="num">' + d.failed + '</td>' +
+    '</tr>';
+  });
+
+  tbody.innerHTML = html || '<tr><td colspan="5" style="color:#9ca3af;padding:8px 12px">No pipeline data</td></tr>';
+}
+
+function renderActivity(ingestion) {
+  var card = $('#activityCard');
+  if (!ingestion || !ingestion.posts_inserted_by_hour_24h) {
+    card.innerHTML = '<div class="loading">No data</div>';
+    return;
+  }
+
+  var hours = ingestion.posts_inserted_by_hour_24h;
+  if (hours.length === 0) {
+    card.innerHTML = '<div style="color:#9ca3af;font-size:13px;padding:8px 0">No activity in the last 24h</div>';
+    return;
+  }
+
+  var maxVal = 1;
+  hours.forEach(function(h) { if (h.inserted > maxVal) maxVal = h.inserted; });
+
+  var html = '<div class="bar-chart">';
+  hours.forEach(function(h) {
+    var pct = Math.max((h.inserted / maxVal) * 100, 1);
+    var label = h.hour || '';
+    try { label = label.split('T')[1] || label; } catch(e) {}
+    if (label.length > 5) label = label.substring(0, 5);
+
+    html += '<div class="bar-row">' +
+      '<span class="bar-label">' + esc(label) + '</span>' +
+      '<div class="bar-track"><div class="bar-fill" style="width:' + pct.toFixed(1) + '%"></div></div>' +
+      '<span class="bar-count">' + h.inserted + '</span>' +
+    '</div>';
+  });
+  html += '</div>';
+
+  card.innerHTML = html;
+}
+
+function renderSources(ingestion) {
+  var tbody = $('#sourcesBody');
+  if (!ingestion || !ingestion.top_sources_inserted_24h) {
+    tbody.innerHTML = '<tr><td colspan="3" class="loading">No data</td></tr>';
+    return;
+  }
+
+  var sources = ingestion.top_sources_inserted_24h.slice(0, 10);
+  if (sources.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="3" style="color:#9ca3af;padding:8px 12px">No sources</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = sources.map(function(s, i) {
+    var rankStyle = i < 3 ? ' style="font-weight:700;color:#1d4ed8"' : '';
+    return '<tr>' +
+      '<td' + rankStyle + '>' + (i + 1) + '</td>' +
+      '<td>' + esc(s.source_name) + '</td>' +
+      '<td class="num">' + s.inserted + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function renderContentStats(categories) {
+  function renderStatBlock(obj) {
+    if (!obj || Object.keys(obj).length === 0) return '<div style="color:#9ca3af;font-size:12px">No data</div>';
+    return Object.entries(obj).map(function(pair) {
+      return '<div class="stat-item"><span class="stat-key">' + esc(pair[0]) + '</span><span class="stat-val">' + pair[1] + '</span></div>';
+    }).join('');
+  }
+
+  if (categories) {
+    $('#contentTypeStats').innerHTML = renderStatBlock(categories.content_type_stats);
+    $('#participationStats').innerHTML = renderStatBlock(categories.participation_stats);
+    $('#timeStatusStats').innerHTML = renderStatBlock(categories.time_status_stats);
+  } else {
+    $('#contentTypeStats').innerHTML = '<div class="loading">No data</div>';
+    $('#participationStats').innerHTML = '<div class="loading">No data</div>';
+    $('#timeStatusStats').innerHTML = '<div class="loading">No data</div>';
+  }
+}
+
+function updateTimestamp() {
+  var el = $('#lastUpdated');
+  var now = new Date();
+  el.textContent = 'Updated ' + now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+// ========== Main Load ==========
+async function loadAll() {
+  var results = await Promise.all([
+    fetchJSON(API_BASE + '/api/health'),
+    fetchJSON(API_BASE + '/api/support'),
+    fetchJSON(API_BASE + '/api/jobs/summary'),
+    fetchJSON(API_BASE + '/api/posts/categories'),
+    fetchJSON(API_BASE + '/api/jobs/ingestion-health'),
+  ]);
+
+  var health = results[0];
+  var support = results[1];
+  var queue = results[2];
+  var categories = results[3];
+  var ingestion = results[4];
+
+  renderHeaderStatus(health);
+  renderKPI(queue, support, ingestion, categories);
+  renderQueue(queue);
+  renderPipeline(ingestion);
+  renderActivity(ingestion);
+  renderSources(ingestion);
+  renderContentStats(categories);
+  updateTimestamp();
+}
+
+// ========== Init ==========
+initNav();
+loadAll();
+pollTimer = setInterval(loadAll, POLL_MS);
+</script>
+
+</body>
+</html>

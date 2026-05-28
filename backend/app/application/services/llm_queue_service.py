@@ -35,7 +35,9 @@ class LlmQueueService:
         try:
             statement = (
                 select(Post)
+                .outerjoin(PostProjection, PostProjection.post_id == Post.id)
                 .where(Post.llm_status != LlmStatus.COMPLETED.value)
+                .where(self._queue_eligible_clause())
                 .order_by(Post.id.desc())
             )
             created = 0
@@ -83,6 +85,8 @@ class LlmQueueService:
         try:
             statement = (
                 select(LlmTask)
+                .join(Post, Post.id == LlmTask.post_id)
+                .outerjoin(PostProjection, PostProjection.post_id == Post.id)
                 .where(
                     or_(
                         LlmTask.status.in_([SyncStatus.PENDING.value, SyncStatus.FAILED.value]),
@@ -92,6 +96,7 @@ class LlmQueueService:
                         ),
                     ),
                     LlmTask.attempts < self.settings.llm_worker_max_attempts,
+                    self._queue_eligible_clause(),
                 )
                 .order_by(LlmTask.updated_at.asc(), LlmTask.id.asc())
                 .limit(self.settings.llm_worker_batch_size)
@@ -110,6 +115,15 @@ class LlmQueueService:
             return []
         finally:
             db.close()
+
+    def _queue_eligible_clause(self):
+        now = datetime.now(timezone.utc)
+        recent_cutoff = now - timedelta(days=max(self.settings.queue_recent_days, 0))
+        return or_(
+            Post.published_at >= recent_cutoff,
+            PostProjection.deadline_at >= now,
+            PostProjection.event_start_at >= now,
+        )
 
     async def _process_task(self, task_id: int) -> bool:
         payload = self._load_task_payload(task_id)

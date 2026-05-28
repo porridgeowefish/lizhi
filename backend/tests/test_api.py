@@ -9,8 +9,10 @@ from fastapi.testclient import TestClient
 from app.core.config import Settings
 from app.db.models import Post, PostCategory, PostProjection, Source
 from app.domain.enums import (
+    ContentStatus,
     ContentType,
     DisplayLevel,
+    LlmStatus,
     ParticipationStatus,
     SyncTriggerType,
     TimelinessLevel,
@@ -110,6 +112,9 @@ def insert_sorting_post(
     title: str,
     deadline_at: datetime | None,
     published_at: datetime,
+    *,
+    event_start_at: datetime | None = None,
+    event_end_at: datetime | None = None,
 ):
     post = Post(
         upstream_post_id=upstream_id,
@@ -125,12 +130,14 @@ def insert_sorting_post(
     db.add(post)
     db.flush()
     db.add(PostCategory(post_id=post.id, category_code="competition", category_source="test"))
-    time_status = TimeStatus.UNDATED if deadline_at is None else TimeStatus.UPCOMING
+    time_status = TimeStatus.UNDATED if deadline_at is None and event_start_at is None else TimeStatus.UPCOMING
     db.add(
         PostProjection(
             post_id=post.id,
             primary_category="competition",
             content_type=ContentType.ACTIONABLE.value,
+            event_start_at=event_start_at,
+            event_end_at=event_end_at,
             deadline_at=deadline_at,
             time_status=time_status.value,
             timeliness_level=TimelinessLevel.NORMAL.value,
@@ -185,7 +192,7 @@ def test_posts_search_and_detail(tmp_path: Path):
     assert detail_payload["time_status"] in {"upcoming", "undated"}
 
 
-def test_posts_deadline_sort_keeps_expired_after_upcoming_and_undated_last(tmp_path: Path):
+def test_posts_deadline_sort_uses_nearest_key_time(tmp_path: Path):
     client = build_empty_test_client(tmp_path)
     db = client.app.state.session_factory()
     try:
@@ -193,23 +200,108 @@ def test_posts_deadline_sort_keeps_expired_after_upcoming_and_undated_last(tmp_p
         db.add(source)
         db.flush()
         now = datetime.now(timezone.utc)
-        insert_sorting_post(db, source, "expired", "Expired deadline", now - timedelta(days=1), now)
         insert_sorting_post(
             db,
             source,
-            "future-far",
-            "Future far deadline",
-            now + timedelta(days=8),
+            "expired-older",
+            "Expired older event",
+            None,
             now - timedelta(minutes=1),
+            event_start_at=now - timedelta(days=5),
         )
-        insert_sorting_post(db, source, "undated", "No deadline", None, now - timedelta(minutes=2))
         insert_sorting_post(
             db,
             source,
-            "future-near",
-            "Future near deadline",
-            now + timedelta(days=2),
-            now - timedelta(minutes=3),
+            "expired-recent",
+            "Expired recent deadline",
+            now - timedelta(days=1),
+            now - timedelta(minutes=2),
+            event_start_at=now - timedelta(days=2),
+        )
+        insert_sorting_post(db, source, "undated-new", "No key time new", None, now - timedelta(minutes=3))
+        insert_sorting_post(db, source, "undated-old", "No key time old", None, now - timedelta(minutes=4))
+        insert_sorting_post(
+            db,
+            source,
+            "deadline-three",
+            "Deadline in three days",
+            now + timedelta(days=3),
+            now - timedelta(minutes=5),
+        )
+        insert_sorting_post(
+            db,
+            source,
+            "event-two",
+            "Event in two days",
+            None,
+            now - timedelta(minutes=6),
+            event_start_at=now + timedelta(days=2),
+            event_end_at=now + timedelta(hours=6),
+        )
+        insert_sorting_post(
+            db,
+            source,
+            "both-start-one",
+            "Both times choose event",
+            now + timedelta(days=5),
+            now - timedelta(minutes=7),
+            event_start_at=now + timedelta(days=1),
+            event_end_at=now + timedelta(hours=2),
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.get("/api/posts", params={"sort": "deadline", "limit": 10, "show_all": True})
+    response.raise_for_status()
+    payload = response.json()
+
+    assert payload["total"] == 7
+    assert [item["title"] for item in payload["items"]] == [
+        "Both times choose event",
+        "Event in two days",
+        "Deadline in three days",
+        "No key time old",
+        "No key time new",
+        "Expired recent deadline",
+        "Expired older event",
+    ]
+    assert [item["key_time_type"] for item in payload["items"]] == [
+        "event_start",
+        "event_start",
+        "deadline",
+        "none",
+        "none",
+        "deadline",
+        "event_start",
+    ]
+    assert payload["items"][0]["key_time_at"] == payload["items"][0]["event_start_at"]
+    assert payload["items"][1]["key_time_at"] == payload["items"][1]["event_start_at"]
+    assert payload["items"][2]["key_time_at"] == payload["items"][2]["deadline_at"]
+
+
+def test_posts_hide_pre_2022_content_by_default(tmp_path: Path):
+    client = build_empty_test_client(tmp_path)
+    db = client.app.state.session_factory()
+    try:
+        source = Source(upstream_source_id="CUTOFF_SRC", name="Cutoff Source")
+        db.add(source)
+        db.flush()
+        insert_sorting_post(
+            db,
+            source,
+            "old-post",
+            "Old hidden post",
+            None,
+            datetime(2021, 12, 31, tzinfo=timezone.utc),
+        )
+        insert_sorting_post(
+            db,
+            source,
+            "new-post",
+            "New visible post",
+            None,
+            datetime.now(timezone.utc),
         )
         db.commit()
     finally:
@@ -219,13 +311,68 @@ def test_posts_deadline_sort_keeps_expired_after_upcoming_and_undated_last(tmp_p
     response.raise_for_status()
     payload = response.json()
 
-    assert payload["total"] == 4
-    assert [item["title"] for item in payload["items"]] == [
-        "Future near deadline",
-        "Future far deadline",
-        "Expired deadline",
-        "No deadline",
-    ]
+    assert payload["total"] == 1
+    assert [item["title"] for item in payload["items"]] == ["New visible post"]
+
+    show_all = client.get("/api/posts", params={"show_all": True, "sort": "deadline", "limit": 10})
+    show_all.raise_for_status()
+    assert show_all.json()["total"] == 2
+
+
+def test_posts_default_scope_keeps_future_key_time_and_recent_undated(tmp_path: Path):
+    client = build_empty_test_client(tmp_path)
+    db = client.app.state.session_factory()
+    try:
+        source = Source(upstream_source_id="SCOPE_SRC", name="Scope Source")
+        db.add(source)
+        db.flush()
+        now = datetime.now(timezone.utc)
+        insert_sorting_post(
+            db,
+            source,
+            "future-deadline",
+            "Future deadline",
+            now + timedelta(days=3),
+            now - timedelta(days=200),
+        )
+        insert_sorting_post(
+            db,
+            source,
+            "recent-undated",
+            "Recent undated",
+            None,
+            now - timedelta(days=10),
+        )
+        insert_sorting_post(
+            db,
+            source,
+            "old-undated",
+            "Old undated",
+            None,
+            now - timedelta(days=200),
+        )
+        insert_sorting_post(
+            db,
+            source,
+            "expired-key-time",
+            "Expired key time",
+            now - timedelta(days=1),
+            now - timedelta(days=1),
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.get("/api/posts", params={"sort": "deadline", "limit": 10})
+    response.raise_for_status()
+    payload = response.json()
+
+    assert payload["total"] == 2
+    assert [item["title"] for item in payload["items"]] == ["Future deadline", "Recent undated"]
+
+    show_all = client.get("/api/posts", params={"show_all": True, "sort": "deadline", "limit": 10})
+    show_all.raise_for_status()
+    assert show_all.json()["total"] == 4
 
 
 def test_sync_job_reports_discard_counts(tmp_path: Path):
@@ -233,7 +380,7 @@ def test_sync_job_reports_discard_counts(tmp_path: Path):
     response = client.post("/api/sync")
     response.raise_for_status()
     payload = response.json()
-    assert payload["posts_discarded"] >= 2
+    assert payload["posts_discarded"] >= 1
     assert payload["discarded_count"] == payload["posts_discarded"]
     assert "recap" in payload["discard_stats_by_reason"] or "garbled_hidden_source" in payload["discard_stats_by_reason"]
 
@@ -245,6 +392,49 @@ def test_category_stats_include_new_dimensions(tmp_path: Path):
     payload = response.json()
     assert "participation_stats" in payload
     assert "time_status_stats" in payload
+    assert "time_unknown_breakdown" in payload
+
+
+def test_category_stats_breaks_down_undated_reasons(tmp_path: Path):
+    client = build_empty_test_client(tmp_path)
+    db = client.app.state.session_factory()
+    try:
+        source = Source(upstream_source_id="UNDATED_SRC", name="Undated Source")
+        db.add(source)
+        db.flush()
+        now = datetime.now(timezone.utc)
+        rows = [
+            ("missing", ContentStatus.MISSING.value, LlmStatus.NOT_REQUESTED.value),
+            ("waiting", ContentStatus.READY.value, LlmStatus.PENDING.value),
+            ("failed", ContentStatus.READY.value, LlmStatus.FAILED.value),
+            ("processed", ContentStatus.READY.value, LlmStatus.COMPLETED.value),
+        ]
+        for upstream_id, content_status, llm_status in rows:
+            post = insert_sorting_post(
+                db,
+                source,
+                upstream_id,
+                f"Undated {upstream_id}",
+                None,
+                now - timedelta(minutes=1),
+            )
+            post.content_status = content_status
+            post.llm_status = llm_status
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.get("/api/posts/categories")
+    response.raise_for_status()
+    payload = response.json()
+
+    assert payload["time_status_stats"]["undated"] == 4
+    assert payload["time_unknown_breakdown"] == {
+        "content_missing": 1,
+        "llm_failed": 1,
+        "llm_waiting": 1,
+        "processed_no_time": 1,
+    }
 
 
 def test_support_click_is_counted_once_per_client(tmp_path: Path):

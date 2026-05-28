@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>荔枝 Logo 10 版方案</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #1a1a2e; color: #fff; padding: 40px; }
+  h1 { text-align: center; font-size: 28px; margin-bottom: 8px; color: #f0f0f0; }
+  p.sub { text-align: center; color: #888; margin-bottom: 40px; }
+  .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 32px; max-width: 1200px; margin: 0 auto; }
+  .card { background: #16213e; border-radius: 16px; padding: 24px; text-align: center; border: 2px solid transparent; transition: all 0.3s; cursor: pointer; }
+  .card:hover { border-color: #e74c3c; transform: translateY(-4px); box-shadow: 0 8px 30px rgba(231,76,60,0.3); }
+  .card .num { font-size: 12px; color: #e74c3c; font-weight: 700; margin-bottom: 8px; letter-spacing: 2px; }
+  .card .name { font-size: 14px; color: #ccc; margin-top: 12px; }
+  .card .desc { font-size: 11px; color: #666; margin-top: 4px; line-height: 1.4; }
+
+  .icon-box { width: 80px; height: 80px; border-radius: 20px; margin: 0 auto; display: flex; align-items: center; justify-content: center; }
+  .icon-box svg { width: 52px; height: 52px; }
+
+  .bg-red { background: linear-gradient(135deg, #c0392b, #e74c3c); }
+  .bg-dark { background: #0f0f23; }
+  .bg-light { background: #f0f7ed; }
+  .bg-warm { background: linear-gradient(135deg, #2d1810, #4a2520); }
+  .bg-green { background: linear-gradient(135deg, #1a3a1a, #2d5a2d); }
+  .bg-cream { background: #faf3e8; }
+
+  /* Preview in header context */
+  .header-preview { max-width: 600px; margin: 50px auto 0; background: #16213e; border-radius: 16px; padding: 24px; }
+  .header-preview h2 { font-size: 14px; color: #888; margin-bottom: 16px; text-align: center; }
+  .mock-header { display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.05); border-radius: 12px; padding: 16px 20px; }
+  .mock-header .brand-icon { width: 56px; height: 56px; border-radius: 18px; display: flex; align-items: center; justify-content: center; }
+  .mock-header .brand-icon svg { width: 38px; height: 38px; }
+  .mock-header h1 { font-size: 24px; color: #f0f0f0; letter-spacing: 4px; margin: 0; }
+  .mock-header p { font-size: 11px; color: #888; margin: 0; }
+</style>
+</head>
+<body>
+
+<h1>荔枝 Logo 设计方案</h1>
+<p class="sub">点击选择 · 每个方案附带 header 预览上下文</p>
+
+<div class="grid">
+
+<!-- #1: 立体写实 -->
+<div class="card" onclick="selectLogo(1)">
+  <div class="num">方案 01</div>
+  <div class="icon-box bg-red">
+    <svg viewBox="0 0 100 100">
+      <defs>
+        <radialGradient id="g1" cx="35%" cy="30%" r="60%">
+          <stop offset="0%" stop-color="#ff6b7a"/>
+          <stop offset="50%" stop-color="#d63031"/>
+          <stop offset="100%" stop-color="#8b1a1a"/>
+        </radialGradient>
+        <radialGradient id="g1h" cx="30%" cy="25%" r="30%">
+          <stop offset="0%" stop-color="#fff" stop-opacity="0.4"/>
+          <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+        </radialGradient>
+        <filter id="f1"><feGaussianBlur stdDeviation="0.8"/></filter>
+      </defs>
+      <circle cx="50" cy="56" r="32" fill="url(#g1)"/>
+      <g fill="#6b1515" opacity="0.35" filter="url(#f1)">
+        <circle cx="36" cy="44" r="3.5"/><circle cx="52" cy="38" r="3"/>
+        <circle cx="66" cy="48" r="3.5"/><circle cx="62" cy="66" r="3"/>
+        <circle cx="38" cy="68" r="3.5"/><circle cx="28" cy="56" r="3"/>
+        <circle cx="50" cy="54" r="2.5"/><circle cx="44" cy="62" r="3"/>
+        <circle cx="56" cy="46" r="2.5"/><circle cx="42" cy="48" r="2.5"/>
+      </g>
+      <circle cx="50" cy="56" r="32" fill="url(#g1h)"/>
+      <ellipse cx="42" cy="16" rx="7" ry="12" fill="#2ecc71" transform="rotate(-12,42,16)"/>
+      <ellipse cx="56" cy="14" rx="6" ry="10" fill="#27ae60" transform="rotate(8,56,14)"/>
+      <path d="M50 20 Q50 10 50 4" stroke="#1e8449" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <div class="name">立体写实</div>
+  <div class="desc">径向渐变+高光+纹理凸起，接近真实荔枝质感</div>
+</div>
+
+<!-- #2: 扁平极简 -->
+<div class="card" onclick="selectLogo(2)">
+  <div class="num">方案 02</div>
+  <div class="icon-box bg-red">
+    <svg viewBox="0 0 100 100">
+      <circle cx="50" cy="54" r="30" fill="#e74c3c"/>
+      <g fill="#c0392b" opacity="0.6">
+        <circle cx="38" cy="44" r="5"/><circle cx="56" cy="40" r="4.5"/>
+        <circle cx="64" cy="56" r="5"/><circle cx="52" cy="64" r="4.5"/>
+        <circle cx="38" cy="62" r="5"/><circle cx="46" cy="52" r="4"/>
+      </g>
+      <rect x="47" y="14" width="6" height="14" rx="3" fill="#27ae60"/>
+      <ellipse cx="42" cy="14" rx="8" ry="5" fill="#2ecc71"/>
+      <ellipse cx="58" cy="12" rx="7" ry="4.5" fill="#27ae60"/>
+    </svg>
+  </div>
+  <div class="name">扁平极简</div>
+  <div class="desc">纯色块、无渐变、粗线条，适合小尺寸显示</div>
+</div>
+
+<!-- #3: 线描优雅 -->
+<div class="card" onclick="selectLogo(3)">
+  <div class="num">方案 03</div>
+  <div class="icon-box bg-cream">
+    <svg viewBox="0 0 100 100">
+      <circle cx="50" cy="56" r="28" fill="none" stroke="#c0392b" stroke-width="3"/>
+      <g fill="none" stroke="#c0392b" stroke-width="1.5" opacity="0.5">
+        <circle cx="40" cy="48" r="5"/><circle cx="56" cy="44" r="4.5"/>
+        <circle cx="60" cy="60" r="5"/><circle cx="44" cy="66" r="4.5"/>
+        <circle cx="38" cy="58" r="4"/><circle cx="52" cy="56" r="4"/>
+      </g>
+      <path d="M50 28 Q50 18 50 8" stroke="#27ae60" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M50 22 Q40 14 34 18" stroke="#2ecc71" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <path d="M50 20 Q60 12 66 16" stroke="#2ecc71" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <circle cx="50" cy="28" r="2.5" fill="#c0392b"/>
+    </svg>
+  </div>
+  <div class="name">线描优雅</div>
+  <div class="desc">浅底红线，手绘质感，文艺范</div>
+</div>
+
+<!-- #4: 剥开露果肉 -->
+<div class="card" onclick="selectLogo(4)">
+  <div class="num">方案 04</div>
+  <div class="icon-box bg-red">
+    <svg viewBox="0 0 100 100">
+      <defs>
+        <radialGradient id="g4" cx="40%" cy="35%" r="55%">
+          <stop offset="0%" stop-color="#ffeaa7"/>
+          <stop offset="60%" stop-color="#fdcb6e"/>
+          <stop offset="100%" stop-color="#e8b830"/>
+        </radialGradient>
+        <radialGradient id="g4s" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#d63031"/>
+          <stop offset="100%" stop-color="#8b1a1a"/>
+        </radialGradient>
+      </defs>
+      <!-- Shell half -->
+      <path d="M50 30 Q18 30 18 58 Q18 84 50 84 Q82 84 82 58 Q82 30 50 30 Z" fill="url(#g4s)" opacity="0.6"/>
+      <path d="M50 30 Q18 30 18 58 Q18 84 50 84" fill="none" stroke="#8b1a1a" stroke-width="2"/>
+      <!-- Flesh -->
+      <ellipse cx="54" cy="56" rx="26" ry="28" fill="url(#g4)"/>
+      <ellipse cx="48" cy="50" rx="8" ry="6" fill="#fff" opacity="0.4"/>
+      <!-- Seed -->
+      <ellipse cx="56" cy="58" rx="10" ry="13" fill="#6b4226" opacity="0.7"/>
+      <!-- Leaves -->
+      <ellipse cx="42" cy="18" rx="7" ry="12" fill="#2ecc71" transform="rotate(-15,42,18)"/>
+      <ellipse cx="58" cy="16" rx="6" ry="10" fill="#27ae60" transform="rotate(10,58,16)"/>
+      <path d="M50 22 Q50 12 50 5" stroke="#1e8449" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <div class="name">剥开露肉</div>
+  <div class="desc">半剥开露出晶莹果肉，辨识度最高</div>
+</div>
+
+<!-- #5: 双果叠影 -->
+<div class="card" onclick="selectLogo(5)">
+  <div class="num">方案 05</div>
+  <div class="icon-box bg-dark">
+    <svg viewBox="0 0 100 100">
+      <defs>
+        <radialGradient id="g5a" cx="40%" cy="35%" r="55%">
+          <stop offset="0%" stop-color="#ff7675"/><stop offset="100%" stop-color="#d63031"/>
+        </radialGradient>
+        <radialGradient id="g5b" cx="40%" cy="35%" r="55%">
+          <stop offset="0%" stop-color="#fab1a0"/><stop offset="100%" stop-color="#e17055"/>
+        </radialGradient>
+      </defs>
+      <circle cx="40" cy="52" r="24" fill="url(#g5b)" opacity="0.5"/>
+      <circle cx="58" cy="50" r="26" fill="url(#g5a)"/>
+      <g fill="#a71d2a" opacity="0.3">
+        <circle cx="50" cy="40" r="3"/><circle cx="64" cy="44" r="2.5"/>
+        <circle cx="60" cy="58" r="3"/><circle cx="52" cy="54" r="2.5"/>
+      </g>
+      <ellipse cx="56" cy="16" rx="5" ry="9" fill="#2ecc71" transform="rotate(5,56,16)"/>
+      <path d="M56 22 Q56 14 56 6" stroke="#1e8449" stroke-width="2" fill="none" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <div class="name">双果叠影</div>
+  <div class="desc">深色底+两颗荔枝前后叠放，立体感强</div>
+</div>
+
+<!-- #6: 国风水墨 -->
+<div class="card" onclick="selectLogo(6)">
+  <div class="num">方案 06</div>
+  <div class="icon-box bg-cream">
+    <svg viewBox="0 0 100 100">
+      <defs>
+        <radialGradient id="g6" cx="45%" cy="40%" r="50%">
+          <stop offset="0%" stop-color="#e8a0a0" stop-opacity="0.6"/>
+          <stop offset="80%" stop-color="#c0392b" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="#8b1a1a" stop-opacity="0.1"/>
+        </radialGradient>
+      </defs>
+      <circle cx="50" cy="54" r="28" fill="url(#g6)" stroke="#c0392b" stroke-width="1" stroke-opacity="0.3"/>
+      <g fill="#c0392b" opacity="0.15">
+        <circle cx="40" cy="46" r="4.5"/><circle cx="54" cy="42" r="4"/>
+        <circle cx="60" cy="56" r="4.5"/><circle cx="46" cy="62" r="4"/>
+        <circle cx="38" cy="56" r="3.5"/>
+      </g>
+      <path d="M50 26 Q48 16 50 6" stroke="#2d5a2d" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.7"/>
+      <path d="M50 22 Q38 16 32 20" stroke="#3a7a3a" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.5"/>
+      <path d="M50 20 Q62 14 68 18" stroke="#3a7a3a" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.5"/>
+      <!-- Ink splash -->
+      <circle cx="30" cy="70" r="2" fill="#c0392b" opacity="0.08"/>
+      <circle cx="72" cy="42" r="1.5" fill="#c0392b" opacity="0.06"/>
+    </svg>
+  </div>
+  <div class="name">国风水墨</div>
+  <div class="desc">淡彩渲染，墨痕笔触，江南意境</div>
+</div>
+
+<!-- #7: 像素复古 -->
+<div class="card" onclick="selectLogo(7)">
+  <div class="num">方案 07</div>
+  <div class="icon-box bg-dark">
+    <svg viewBox="0 0 100 100" shape-rendering="crispEdges">
+      <rect x="40" y="16" width="4" height="4" fill="#2ecc71"/>
+      <rect x="44" y="12" width="4" height="4" fill="#27ae60"/>
+      <rect x="48" y="8" width="4" height="4" fill="#1e8449"/>
+      <rect x="52" y="12" width="4" height="4" fill="#2ecc71"/>
+      <rect x="56" y="16" width="4" height="4" fill="#27ae60"/>
+      <rect x="28" y="32" width="44" height="44" rx="4" fill="#e74c3c"/>
+      <rect x="32" y="36" width="36" height="36" rx="2" fill="#d63031"/>
+      <g fill="#c0392b">
+        <rect x="36" y="40" width="4" height="4"/><rect x="48" y="40" width="4" height="4"/>
+        <rect x="60" y="44" width="4" height="4"/><rect x="40" y="52" width="4" height="4"/>
+        <rect x="52" y="56" width="4" height="4"/><rect x="36" y="60" width="4" height="4"/>
+        <rect x="56" y="60" width="4" height="4"/><rect x="44" y="64" width="4" height="4"/>
+      </g>
+      <rect x="36" y="36" width="4" height="4" fill="#ff7675" opacity="0.5"/>
+    </svg>
+  </div>
+  <div class="name">像素复古</div>
+  <div class="desc">8-bit 风格，趣味性强，适合校园年轻感</div>
+</div>
+
+<!-- #8: 几何抽象 -->
+<div class="card" onclick="selectLogo(8)">
+  <div class="num">方案 08</div>
+  <div class="icon-box bg-red">
+    <svg viewBox="0 0 100 100">
+      <defs>
+        <linearGradient id="g8" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#ff6b6b"/><stop offset="100%" stop-color="#ee5a24"/>
+        </linearGradient>
+      </defs>
+      <polygon points="50,22 76,42 68,72 32,72 24,42" fill="url(#g8)" stroke="#fff" stroke-width="1.5" stroke-opacity="0.2"/>
+      <polygon points="50,32 66,44 62,64 38,64 34,44" fill="#c0392b" opacity="0.4"/>
+      <circle cx="44" cy="48" r="3" fill="#fff" opacity="0.3"/>
+      <circle cx="56" cy="52" r="2.5" fill="#fff" opacity="0.25"/>
+      <circle cx="50" cy="58" r="2" fill="#fff" opacity="0.2"/>
+      <rect x="48" y="10" width="4" height="16" rx="2" fill="#2ecc71"/>
+      <polygon points="38,16 48,14 48,22" fill="#27ae60"/>
+      <polygon points="62,14 52,14 52,20" fill="#2ecc71"/>
+    </svg>
+  </div>
+  <div class="name">几何抽象</div>
+  <div class="desc">五边形外轮廓，几何线条，现代设计感</div>
+</div>
+
+<!-- #9: 半剥面纱 -->
+<div class="card" onclick="selectLogo(9)">
+  <div class="num">方案 09</div>
+  <div class="icon-box bg-red">
+    <svg viewBox="0 0 100 100">
+      <defs>
+        <radialGradient id="g9f" cx="45%" cy="40%" r="50%">
+          <stop offset="0%" stop-color="#ffeaa7"/><stop offset="100%" stop-color="#f9ca24"/>
+        </radialGradient>
+      </defs>
+      <!-- Full fruit body -->
+      <circle cx="50" cy="56" r="30" fill="#d63031"/>
+      <g fill="#a71d2a" opacity="0.4">
+        <circle cx="38" cy="46" r="3.5"/><circle cx="54" cy="40" r="3"/>
+        <circle cx="64" cy="54" r="3.5"/><circle cx="50" cy="66" r="3"/>
+        <circle cx="36" cy="60" r="3"/><circle cx="46" cy="54" r="2.5"/>
+      </g>
+      <!-- Peel flap -->
+      <path d="M50 26 Q30 28 24 40 Q20 50 26 56 Q34 64 50 60" fill="#c0392b" stroke="#8b1a1a" stroke-width="1"/>
+      <g fill="#8b1a1a" opacity="0.3">
+        <circle cx="36" cy="38" r="3"/><circle cx="30" cy="48" r="2.5"/>
+      </g>
+      <!-- Exposed flesh -->
+      <ellipse cx="52" cy="52" rx="20" ry="22" fill="url(#g9f)"/>
+      <ellipse cx="48" cy="46" rx="6" ry="4" fill="#fff" opacity="0.35"/>
+      <!-- Leaves -->
+      <ellipse cx="44" cy="16" rx="6" ry="10" fill="#2ecc71" transform="rotate(-10,44,16)"/>
+      <ellipse cx="56" cy="14" rx="5" ry="8" fill="#27ae60" transform="rotate(8,56,14)"/>
+      <path d="M50 20 Q50 10 50 4" stroke="#1e8449" stroke-width="2" fill="none" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <div class="name">半剥面纱</div>
+  <div class="desc">果皮掀开一角露出果肉，动感+识别度</div>
+</div>
+
+<!-- #10: 荔字印章 -->
+<div class="card" onclick="selectLogo(10)">
+  <div class="num">方案 10</div>
+  <div class="icon-box bg-cream">
+    <svg viewBox="0 0 100 100">
+      <rect x="18" y="18" width="64" height="64" rx="8" fill="none" stroke="#c0392b" stroke-width="3"/>
+      <rect x="24" y="24" width="52" height="52" rx="4" fill="none" stroke="#c0392b" stroke-width="1" opacity="0.3"/>
+      <text x="50" y="64" text-anchor="middle" font-family="serif" font-size="36" font-weight="bold" fill="#c0392b">荔</text>
+      <circle cx="68" cy="32" r="4" fill="#c0392b" opacity="0.15"/>
+      <circle cx="32" cy="70" r="3" fill="#c0392b" opacity="0.1"/>
+    </svg>
+  </div>
+  <div class="name">荔字印章</div>
+  <div class="desc">传统印章风格，红底白边，古典+辨识度</div>
+</div>
+
+</div>
+
+<!-- Header context preview -->
+<div class="header-preview">
+  <h2>Header 上下文预览（所有方案）</h2>
+  <div style="display:grid; grid-template-columns: repeat(5,1fr); gap:16px; margin-top:20px;">
+    <div class="mock-header" style="flex-direction:column; gap:8px;">
+      <div class="brand-icon bg-red"><svg viewBox="0 0 100 100" width="38" height="38"><circle cx="50" cy="56" r="32" fill="#d63031"/><g fill="#a71d2a" opacity="0.35"><circle cx="36" cy="44" r="3.5"/><circle cx="52" cy="38" r="3"/><circle cx="66" cy="48" r="3.5"/><circle cx="62" cy="66" r="3"/><circle cx="38" cy="68" r="3.5"/></g><ellipse cx="42" cy="16" rx="7" ry="12" fill="#2ecc71" transform="rotate(-12,42,16)"/><ellipse cx="56" cy="14" rx="6" ry="10" fill="#27ae60" transform="rotate(8,56,14)"/><path d="M50 20Q50 10 50 4" stroke="#1e8449" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg></div>
+      <span style="font-size:11px;color:#888">01 立体写实</span>
+    </div>
+    <div class="mock-header" style="flex-direction:column; gap:8px;">
+      <div class="brand-icon bg-red"><svg viewBox="0 0 100 100" width="38" height="38"><circle cx="50" cy="54" r="30" fill="#e74c3c"/><g fill="#c0392b" opacity="0.6"><circle cx="38" cy="44" r="5"/><circle cx="56" cy="40" r="4.5"/><circle cx="64" cy="56" r="5"/><circle cx="52" cy="64" r="4.5"/></g><rect x="47" y="14" width="6" height="14" rx="3" fill="#27ae60"/><ellipse cx="42" cy="14" rx="8" ry="5" fill="#2ecc71"/></svg></div>
+      <span style="font-size:11px;color:#888">02 扁平极简</span>
+    </div>
+    <div class="mock-header" style="flex-direction:column; gap:8px;">
+      <div class="brand-icon" style="background:#faf3e8"><svg viewBox="0 0 100 100" width="38" height="38"><circle cx="50" cy="56" r="28" fill="none" stroke="#c0392b" stroke-width="3"/><g fill="none" stroke="#c0392b" stroke-width="1.5" opacity="0.5"><circle cx="40" cy="48" r="5"/><circle cx="56" cy="44" r="4.5"/><circle cx="60" cy="60" r="5"/></g><path d="M50 28Q50 18 50 8" stroke="#27ae60" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg></div>
+      <span style="font-size:11px;color:#888">03 线描优雅</span>
+    </div>
+    <div class="mock-header" style="flex-direction:column; gap:8px;">
+      <div class="brand-icon bg-red"><svg viewBox="0 0 100 100" width="38" height="38"><circle cx="50" cy="54" r="28" fill="#d63031"/><ellipse cx="54" cy="52" rx="20" ry="22" fill="#fdcb6e"/><ellipse cx="48" cy="46" rx="6" ry="4" fill="#fff" opacity="0.4"/><ellipse cx="56" cy="58" rx="8" ry="10" fill="#6b4226" opacity="0.6"/><ellipse cx="42" cy="18" rx="7" ry="12" fill="#2ecc71" transform="rotate(-15,42,18)"/><path d="M50 22Q50 12 50 5" stroke="#1e8449" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg></div>
+      <span style="font-size:11px;color:#888">04 剥开露肉</span>
+    </div>
+    <div class="mock-header" style="flex-direction:column; gap:8px;">
+      <div class="brand-icon" style="background:#0f0f23"><svg viewBox="0 0 100 100" width="38" height="38"><circle cx="40" cy="52" r="24" fill="#e17055" opacity="0.5"/><circle cx="58" cy="50" r="26" fill="#d63031"/><g fill="#a71d2a" opacity="0.3"><circle cx="50" cy="40" r="3"/><circle cx="64" cy="44" r="2.5"/><circle cx="60" cy="58" r="3"/></g><ellipse cx="56" cy="16" rx="5" ry="9" fill="#2ecc71" transform="rotate(5,56,16)"/><path d="M56 22Q56 14 56 6" stroke="#1e8449" stroke-width="2" fill="none" stroke-linecap="round"/></svg></div>
+      <span style="font-size:11px;color:#888">05 双果叠影</span>
+    </div>
+    <div class="mock-header" style="flex-direction:column; gap:8px;">
+      <div class="brand-icon" style="background:#faf3e8"><svg viewBox="0 0 100 100" width="38" height="38"><circle cx="50" cy="54" r="28" fill="#e8a0a0" fill-opacity="0.4" stroke="#c0392b" stroke-width="1" stroke-opacity="0.3"/><g fill="#c0392b" opacity="0.15"><circle cx="40" cy="46" r="4.5"/><circle cx="54" cy="42" r="4"/><circle cx="60" cy="56" r="4.5"/></g><path d="M50 26Q48 16 50 6" stroke="#2d5a2d" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.7"/></svg></div>
+      <span style="font-size:11px;color:#888">06 国风水墨</span>
+    </div>
+    <div class="mock-header" style="flex-direction:column; gap:8px;">
+      <div class="brand-icon" style="background:#0f0f23"><svg viewBox="0 0 100 100" width="38" height="38" shape-rendering="crispEdges"><rect x="28" y="32" width="44" height="44" rx="4" fill="#e74c3c"/><rect x="32" y="36" width="36" height="36" rx="2" fill="#d63031"/><g fill="#c0392b"><rect x="36" y="40" width="4" height="4"/><rect x="48" y="40" width="4" height="4"/><rect x="60" y="44" width="4" height="4"/><rect x="40" y="52" width="4" height="4"/></g><rect x="48" y="8" width="4" height="4" fill="#1e8449"/><rect x="44" y="12" width="4" height="4" fill="#2ecc71"/><rect x="52" y="12" width="4" height="4" fill="#27ae60"/></svg></div>
+      <span style="font-size:11px;color:#888">07 像素复古</span>
+    </div>
+    <div class="mock-header" style="flex-direction:column; gap:8px;">
+      <div class="brand-icon bg-red"><svg viewBox="0 0 100 100" width="38" height="38"><polygon points="50,22 76,42 68,72 32,72 24,42" fill="#ee5a24" stroke="#fff" stroke-width="1.5" stroke-opacity="0.2"/><polygon points="50,32 66,44 62,64 38,64 34,44" fill="#c0392b" opacity="0.4"/><circle cx="44" cy="48" r="3" fill="#fff" opacity="0.3"/><rect x="48" y="10" width="4" height="16" rx="2" fill="#2ecc71"/></svg></div>
+      <span style="font-size:11px;color:#888">08 几何抽象</span>
+    </div>
+    <div class="mock-header" style="flex-direction:column; gap:8px;">
+      <div class="brand-icon bg-red"><svg viewBox="0 0 100 100" width="38" height="38"><circle cx="50" cy="56" r="30" fill="#d63031"/><g fill="#a71d2a" opacity="0.4"><circle cx="38" cy="46" r="3.5"/><circle cx="54" cy="40" r="3"/><circle cx="64" cy="54" r="3.5"/></g><path d="M50 26Q30 28 26 56Q34 64 50 60" fill="#c0392b" stroke="#8b1a1a" stroke-width="1"/><ellipse cx="52" cy="52" rx="20" ry="22" fill="#f9ca24"/><ellipse cx="48" cy="46" rx="6" ry="4" fill="#fff" opacity="0.35"/><ellipse cx="44" cy="16" rx="6" ry="10" fill="#2ecc71" transform="rotate(-10,44,16)"/><path d="M50 20Q50 10 50 4" stroke="#1e8449" stroke-width="2" fill="none" stroke-linecap="round"/></svg></div>
+      <span style="font-size:11px;color:#888">09 半剥面纱</span>
+    </div>
+    <div class="mock-header" style="flex-direction:column; gap:8px;">
+      <div class="brand-icon" style="background:#faf3e8"><svg viewBox="0 0 100 100" width="38" height="38"><rect x="18" y="18" width="64" height="64" rx="8" fill="none" stroke="#c0392b" stroke-width="3"/><text x="50" y="64" text-anchor="middle" font-family="serif" font-size="36" font-weight="bold" fill="#c0392b">荔</text></svg></div>
+      <span style="font-size:11px;color:#888">10 荔字印章</span>
+    </div>
+  </div>
+</div>
+
+<script>
+function selectLogo(n) {
+  document.querySelectorAll('.card').forEach(c => c.style.borderColor = 'transparent');
+  event.currentTarget.style.borderColor = '#e74c3c';
+  console.log('Selected: #' + n);
+}
+</script>
+</body>
+</html>

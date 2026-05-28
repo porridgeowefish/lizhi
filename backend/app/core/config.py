@@ -22,6 +22,7 @@ class Settings:
     database_url: str = ""
     sync_interval_minutes: int = 10
     post_fetch_limit: int = 500
+    incremental_post_fetch_limit: int = 100
     source_fetch_limit: int = 500
     enable_scheduler: bool = True
     upstream_refresh_enabled: bool = True
@@ -46,6 +47,8 @@ class Settings:
     llm_worker_batch_size: int = 2
     llm_worker_max_attempts: int = 3
     content_worker_batch_size: int = 5
+    queue_recent_days: int = 30
+    homepage_recent_undated_days: int = 90
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -57,6 +60,7 @@ class Settings:
             database_url=os.getenv("BACKEND_DATABASE_URL", f"sqlite:///{default_db_path.as_posix()}"),
             sync_interval_minutes=int(os.getenv("BACKEND_SYNC_INTERVAL_MINUTES", "10")),
             post_fetch_limit=int(os.getenv("BACKEND_POST_FETCH_LIMIT", "500")),
+            incremental_post_fetch_limit=int(os.getenv("BACKEND_INCREMENTAL_POST_FETCH_LIMIT", "100")),
             source_fetch_limit=int(os.getenv("BACKEND_SOURCE_FETCH_LIMIT", "500")),
             enable_scheduler=_as_bool(os.getenv("BACKEND_ENABLE_SCHEDULER"), True),
             upstream_refresh_enabled=_as_bool(os.getenv("BACKEND_UPSTREAM_REFRESH_ENABLED"), True),
@@ -81,4 +85,6 @@ class Settings:
             llm_worker_batch_size=int(os.getenv("BACKEND_LLM_WORKER_BATCH_SIZE", "2")),
             llm_worker_max_attempts=int(os.getenv("BACKEND_LLM_WORKER_MAX_ATTEMPTS", "3")),
             content_worker_batch_size=int(os.getenv("BACKEND_CONTENT_WORKER_BATCH_SIZE", "5")),
+            queue_recent_days=int(os.getenv("BACKEND_QUEUE_RECENT_DAYS", "30")),
+            homepage_recent_undated_days=int(os.getenv("BACKEND_HOMEPAGE_RECENT_UNDATED_DAYS", "90")),
         )

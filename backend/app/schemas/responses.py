@@ -23,6 +23,8 @@ class PostItemResponse(BaseModel):
     event_start_at: datetime | None
     event_end_at: datetime | None
     deadline_at: datetime | None
+    key_time_at: datetime | None
+    key_time_type: str
     time_status: str
     timeliness_level: str
     participation_status: str
@@ -51,6 +53,7 @@ class CategoryStatsResponse(BaseModel):
     content_type_stats: dict[str, int]
     participation_stats: dict[str, int]
     time_status_stats: dict[str, int]
+    time_unknown_breakdown: dict[str, int] = {}
 
 
 class SourceResponse(BaseModel):
@@ -63,6 +66,8 @@ class SourceResponse(BaseModel):
     intro: str
     post_count: int
     last_synced_at: datetime | None
+    last_seen_published_at: datetime | None
+    last_seen_upstream_post_id: str
 
 
 class SyncJobItemResponse(BaseModel):

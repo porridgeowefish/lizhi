@@ -32,7 +32,7 @@ def create_app(settings: Settings | None = None, connector=None) -> FastAPI:
     settings = settings or Settings.from_env()
     _, session_factory = build_session_factory(settings)
     connector = connector or (WerssConnector(settings) if settings.upstream_base_url else None)
-    query_service = QueryService()
+    query_service = QueryService(homepage_recent_undated_days=settings.homepage_recent_undated_days)
     job_queue_service = JobQueueService(session_factory)
     ingestion_service = IngestionService(session_factory, connector, settings) if connector else None
     llm_queue_service = LlmQueueService(session_factory, settings) if settings.llm_queue_enabled and settings.llm_enabled else None

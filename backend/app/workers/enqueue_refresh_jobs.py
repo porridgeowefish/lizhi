@@ -35,6 +35,8 @@ def enqueue_refresh_jobs(settings: Settings, limit: int | None = None) -> dict[s
                     "source_id": source.upstream_source_id,
                     "start_page": settings.upstream_refresh_start_page,
                     "end_page": settings.upstream_refresh_end_page,
+                    "mode": "incremental",
+                    "limit": settings.incremental_post_fetch_limit,
                 },
                 priority=50,
             )

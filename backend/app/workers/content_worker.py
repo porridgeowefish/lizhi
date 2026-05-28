@@ -2,18 +2,23 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.application.classification import compute_content_hash, normalize_whitespace
 from app.application.services.ingestion_service import extract_post_content
 from app.application.services.job_queue_service import JobQueueService, job_payload
 from app.core.config import Settings
-from app.db.models import Post
+from app.db.models import Post, PostProjection
 from app.db.session import build_session_factory
 from app.domain.enums import ContentStatus, JobType, LlmStatus
 from app.infrastructure.connectors.werss import WerssConnector
+
+
+LLM_PROCESS_PUBLISHED_AFTER = datetime(2022, 1, 1)
 
 
 class ContentWorker:
@@ -52,6 +57,20 @@ class ContentWorker:
         if not upstream_post_id and not post_id:
             raise ValueError("fetch_content job requires upstream_post_id or post_id")
 
+        db = self.session_factory()
+        try:
+            post = db.get(Post, int(post_id)) if post_id else None
+            if post is None and upstream_post_id:
+                post = db.query(Post).filter(Post.upstream_post_id == upstream_post_id).first()
+            if post is None:
+                raise ValueError("post not found")
+            if not self._is_queue_eligible(db, post):
+                return {"post_id": post.id, "source_job_id": job_id, "skipped": "not_queue_eligible"}
+            post_id_value = post.id
+            upstream_post_id = post.upstream_post_id
+        finally:
+            db.close()
+
         detail = await self._fetch_detail(upstream_post_id or str(post_id))
         if str(detail.get("content") or "").strip() == "DELETED":
             raise ValueError("post is deleted or unavailable upstream")
@@ -61,9 +80,7 @@ class ContentWorker:
 
         db = self.session_factory()
         try:
-            post = db.get(Post, int(post_id)) if post_id else None
-            if post is None and upstream_post_id:
-                post = db.query(Post).filter(Post.upstream_post_id == upstream_post_id).first()
+            post = db.get(Post, post_id_value)
             if post is None:
                 raise ValueError("post not found")
 
@@ -77,23 +94,52 @@ class ContentWorker:
                 content_text[:2000],
                 post.content_hash,
             )
-            if self.settings.llm_enabled and normalize_whitespace(content_text):
+            should_enqueue_llm = (
+                self.settings.llm_enabled
+                and normalize_whitespace(content_text)
+                and self._is_queue_eligible(db, post)
+            )
+            if should_enqueue_llm:
                 post.llm_status = LlmStatus.PENDING.value
             db.add(post)
             db.commit()
             db.refresh(post)
             post_id_value = post.id
             content_hash = post.content_hash
+            published_at = post.published_at
         finally:
             db.close()
 
-        self.queue.enqueue(
-            JobType.LLM_POST,
-            f"post:{post_id_value}:hash:{content_hash}",
-            {"post_id": post_id_value, "content_hash": content_hash},
-            priority=120,
-        )
+        if published_at is not None and published_at.tzinfo is not None:
+            published_at = published_at.replace(tzinfo=None)
+        if published_at is not None and published_at < LLM_PROCESS_PUBLISHED_AFTER:
+            return {"post_id": post_id_value, "content_chars": len(content_text), "source_job_id": job_id, "llm_skipped": "published_before_2022"}
+
+        if should_enqueue_llm:
+            self.queue.enqueue(
+                JobType.LLM_POST,
+                f"post:{post_id_value}:hash:{content_hash}",
+                {"post_id": post_id_value, "content_hash": content_hash},
+                priority=120,
+            )
         return {"post_id": post_id_value, "content_chars": len(content_text), "source_job_id": job_id}
+
+    def _is_queue_eligible(self, db: Session, post: Post) -> bool:
+        now = datetime.now(timezone.utc)
+        recent_cutoff = now - timedelta(days=max(self.settings.queue_recent_days, 0))
+        query = (
+            db.query(Post.id)
+            .outerjoin(PostProjection, PostProjection.post_id == Post.id)
+            .filter(
+                Post.id == post.id,
+                or_(
+                    Post.published_at >= recent_cutoff,
+                    PostProjection.deadline_at >= now,
+                    PostProjection.event_start_at >= now,
+                ),
+            )
+        )
+        return query.first() is not None
 
     async def _fetch_detail(self, upstream_post_id: str) -> dict:
         refresh_post = getattr(self.connector, "refresh_post", None)

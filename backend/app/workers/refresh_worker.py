@@ -5,13 +5,18 @@ import asyncio
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 
+from sqlalchemy import func, or_
+
 from app.application.services.ingestion_service import IngestionService
 from app.application.services.job_queue_service import JobQueueService, job_payload
 from app.core.config import Settings
-from app.db.models import Post, Source, SyncJob
+from app.db.models import Post, PostProjection, Source, SyncJob
 from app.db.session import build_session_factory
 from app.domain.enums import ContentStatus, JobType, LlmStatus, SyncStatus, SyncTriggerType
 from app.infrastructure.connectors.werss import WerssConnector
+
+
+LLM_BACKFILL_PUBLISHED_AFTER = datetime(2022, 1, 1)
 
 
 class RefreshWorker:
@@ -49,8 +54,12 @@ class RefreshWorker:
         )
         self.queue.enqueue(
             JobType.SYNC_SOURCE_POSTS,
-            f"source:{source_id}:limit:{self.settings.post_fetch_limit}",
-            {"source_id": source_id, "limit": self.settings.post_fetch_limit},
+            f"source:{source_id}:mode:incremental:limit:{self.settings.incremental_post_fetch_limit}",
+            {
+                "source_id": source_id,
+                "limit": self.settings.incremental_post_fetch_limit,
+                "mode": "incremental",
+            },
             priority=40,
             run_after=datetime.now(timezone.utc) + timedelta(seconds=max(self.settings.upstream_refresh_settle_seconds, 0)),
         )
@@ -72,11 +81,24 @@ class RefreshWorker:
                 raise ValueError("source not found")
             service = IngestionService(self.session_factory, self.connector, self.settings)
             discard_counter: Counter[str] = Counter()
-            await service._sync_source(db, job, source, discard_counter)  # noqa: SLF001
+            mode = str(payload.get("mode") or "incremental")
+            backfill = mode == "backfill"
+            requested_limit = int(payload.get("limit") or 0)
+            if backfill:
+                fetch_limit = requested_limit or self.settings.post_fetch_limit
+            else:
+                fetch_limit = min(
+                    requested_limit or self.settings.incremental_post_fetch_limit,
+                    self.settings.incremental_post_fetch_limit,
+                )
+            await service._sync_source(db, job, source, discard_counter, fetch_limit=fetch_limit, backfill=backfill)  # noqa: SLF001
             job.sources_synced = 1
             job.posts_discarded = sum(discard_counter.values())
             job.status = SyncStatus.COMPLETED.value
             job.finished_at = datetime.now(timezone.utc)
+            source.post_count = db.query(func.count(Post.id)).filter(Post.source_id == source.id).scalar() or 0
+            source.last_synced_at = datetime.now(timezone.utc)
+            db.add(source)
             db.add(job)
             db.commit()
             sync_job_id = job.id
@@ -96,13 +118,24 @@ class RefreshWorker:
         return {"sync_job_id": sync_job_id, "status": sync_status, "content_jobs": content_jobs, "llm_jobs": llm_jobs}
 
     def _enqueue_llm_jobs(self) -> int:
+        if not self.settings.llm_enabled:
+            return 0
         db = self.session_factory()
         try:
+            now = datetime.now(timezone.utc)
+            recent_cutoff = now - timedelta(days=max(self.settings.queue_recent_days, 0))
             posts = (
                 db.query(Post)
+                .outerjoin(PostProjection, PostProjection.post_id == Post.id)
                 .filter(
                     Post.content_status == ContentStatus.READY.value,
                     Post.llm_status.in_([LlmStatus.PENDING.value, LlmStatus.FAILED.value, LlmStatus.NOT_REQUESTED.value]),
+                    (Post.published_at.is_(None)) | (Post.published_at >= LLM_BACKFILL_PUBLISHED_AFTER),
+                    or_(
+                        Post.published_at >= recent_cutoff,
+                        PostProjection.deadline_at >= now,
+                        PostProjection.event_start_at >= now,
+                    ),
                 )
                 .order_by(Post.id.asc())
                 .limit(500)
@@ -131,7 +164,20 @@ class RefreshWorker:
     def _enqueue_missing_content(self, source_upstream_id: str | None = None) -> int:
         db = self.session_factory()
         try:
-            query = db.query(Post).filter(Post.content_status == ContentStatus.MISSING.value)
+            now = datetime.now(timezone.utc)
+            recent_cutoff = now - timedelta(days=max(self.settings.queue_recent_days, 0))
+            query = (
+                db.query(Post)
+                .outerjoin(PostProjection, PostProjection.post_id == Post.id)
+                .filter(
+                    Post.content_status == ContentStatus.MISSING.value,
+                    or_(
+                        Post.published_at >= recent_cutoff,
+                        PostProjection.deadline_at >= now,
+                        PostProjection.event_start_at >= now,
+                    ),
+                )
+            )
             if source_upstream_id:
                 query = query.join(Source).filter(Source.upstream_source_id == source_upstream_id)
             posts = query.order_by(Post.id.asc()).limit(500).all()
