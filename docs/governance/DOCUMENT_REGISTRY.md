@@ -23,6 +23,7 @@ This file is the repository index-management document.
 | `Agent.md` | active | primary agent and human engineering rules |
 | `CLAUDE.md` | active | pointer to `Agent.md` |
 | `docs/INDEX.md` | active | documentation read order |
+| `docs/CODEBASE_CLASSIFICATION.md` | active | current code responsibility map and modification guide |
 | `docs/governance/ALIGNMENT_CONSENSUS.md` | active | HTML alignment rules |
 | `docs/governance/DOCUMENT_REGISTRY.md` | active | this registry |
 | `docs/backend-rebuild/iter-1-prd.md` | active | target product contract |

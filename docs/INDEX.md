@@ -5,15 +5,16 @@ This repository keeps one active documentation set. Historical alignment drafts 
 ## Read Order
 
 1. [governance/DOCUMENT_REGISTRY.md](governance/DOCUMENT_REGISTRY.md)
-2. [governance/ALIGNMENT_CONSENSUS.md](governance/ALIGNMENT_CONSENSUS.md)
-3. [backend-rebuild/iter-1-prd.md](backend-rebuild/iter-1-prd.md)
-4. [backend-rebuild/current-state.md](backend-rebuild/current-state.md)
-5. [backend-rebuild/backend-consensus.md](backend-rebuild/backend-consensus.md)
-6. [backend-rebuild/stability-audit.md](backend-rebuild/stability-audit.md)
-7. [backend-rebuild/remediation-board.md](backend-rebuild/remediation-board.md)
-8. [backend-rebuild/traffic-isolation-plan.md](backend-rebuild/traffic-isolation-plan.md)
-9. [backend-rebuild/mvp-2-article-pipeline.md](backend-rebuild/mvp-2-article-pipeline.md)
-10. [backend-rebuild/deployment-notes.md](backend-rebuild/deployment-notes.md)
+2. [CODEBASE_CLASSIFICATION.md](CODEBASE_CLASSIFICATION.md)
+3. [governance/ALIGNMENT_CONSENSUS.md](governance/ALIGNMENT_CONSENSUS.md)
+4. [backend-rebuild/iter-1-prd.md](backend-rebuild/iter-1-prd.md)
+5. [backend-rebuild/current-state.md](backend-rebuild/current-state.md)
+6. [backend-rebuild/backend-consensus.md](backend-rebuild/backend-consensus.md)
+7. [backend-rebuild/stability-audit.md](backend-rebuild/stability-audit.md)
+8. [backend-rebuild/remediation-board.md](backend-rebuild/remediation-board.md)
+9. [backend-rebuild/traffic-isolation-plan.md](backend-rebuild/traffic-isolation-plan.md)
+10. [backend-rebuild/mvp-2-article-pipeline.md](backend-rebuild/mvp-2-article-pipeline.md)
+11. [backend-rebuild/deployment-notes.md](backend-rebuild/deployment-notes.md)
 
 ## Active Contract
 
