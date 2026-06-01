@@ -1,0 +1,22 @@
+[
+  {
+    "registration_start_at": null,
+    "registration_deadline_at": "2026-11-22T23:59"
+  },
+  {
+    "registration_start_at": "2026-05-01T00:00",
+    "registration_deadline_at": "2026-05-16T18:00"
+  },
+  {
+    "registration_start_at": "2026-05-01T00:00",
+    "registration_deadline_at": null
+  },
+  {
+    "registration_start_at": null,
+    "registration_deadline_at": "2026-03-23T18:00"
+  },
+  {
+    "registration_start_at": null,
+    "registration_deadline_at": "2026-05-29T17:00"
+  }
+]
