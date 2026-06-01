@@ -318,13 +318,13 @@ const CONTENT_TYPE_LABELS = {
   reference: '参考信息',
   non_actionable: '非机会内容',
   unknown: '未判定',
-  club_activity: '校园活动',
+  campus_activity: '校园活动',
   lecture: '讲座论坛',
   volunteer: '志愿公益',
-  competition: '竞赛征集',
-  exam: '考试考核',
-  recruitment: '招聘招募',
-  notice: '通知公告',
+  competition: '学科竞赛',
+  recruitment: '就业招聘',
+  graduate_study: '升学留学',
+  exam_certification: '考试考证',
   other: '其他',
 }
 

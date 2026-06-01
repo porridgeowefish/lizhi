@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.application.classification import (
     VALID_CATEGORIES,
     TimeSignals,
+    canonical_category,
     derive_time_status,
     html_to_text,
     parse_iso_datetime,
@@ -251,6 +252,7 @@ class LlmQueueService:
 
         llm_category = structured.get("category", "")
         if llm_category in VALID_CATEGORIES:
+            llm_category = canonical_category(llm_category)
             db.query(PostCategory).filter(PostCategory.post_id == post.id).delete()
             db.flush()
             db.add(PostCategory(post_id=post.id, category_code=llm_category, category_source="llm"))

@@ -49,6 +49,18 @@ class Settings:
     content_worker_batch_size: int = 5
     queue_recent_days: int = 30
     homepage_recent_undated_days: int = 90
+    ocr_enabled: bool = False
+    ocr_provider: str = "tencent"
+    tencent_secret_id: str = ""
+    tencent_secret_key: str = ""
+    tencent_ocr_region: str = "ap-guangzhou"
+    ocr_action: str = "RecognizeAgent"
+    ocr_max_images_per_post: int = 8
+    ocr_min_text_length: int = 120
+    ocr_timeout_seconds: int = 20
+    ocr_monthly_limit: int = 1000
+    ocr_cache_enabled: bool = True
+    ocr_count_failed_attempts: bool = True
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -87,4 +99,16 @@ class Settings:
             content_worker_batch_size=int(os.getenv("BACKEND_CONTENT_WORKER_BATCH_SIZE", "5")),
             queue_recent_days=int(os.getenv("BACKEND_QUEUE_RECENT_DAYS", "30")),
             homepage_recent_undated_days=int(os.getenv("BACKEND_HOMEPAGE_RECENT_UNDATED_DAYS", "90")),
+            ocr_enabled=_as_bool(os.getenv("BACKEND_OCR_ENABLED"), False),
+            ocr_provider=os.getenv("BACKEND_OCR_PROVIDER", "tencent"),
+            tencent_secret_id=os.getenv("BACKEND_TENCENT_SECRET_ID", ""),
+            tencent_secret_key=os.getenv("BACKEND_TENCENT_SECRET_KEY", ""),
+            tencent_ocr_region=os.getenv("BACKEND_TENCENT_OCR_REGION", "ap-guangzhou"),
+            ocr_action=os.getenv("BACKEND_OCR_ACTION", "RecognizeAgent"),
+            ocr_max_images_per_post=int(os.getenv("BACKEND_OCR_MAX_IMAGES_PER_POST", "8")),
+            ocr_min_text_length=int(os.getenv("BACKEND_OCR_MIN_TEXT_LENGTH", "120")),
+            ocr_timeout_seconds=int(os.getenv("BACKEND_OCR_TIMEOUT_SECONDS", "20")),
+            ocr_monthly_limit=int(os.getenv("BACKEND_OCR_MONTHLY_LIMIT", "1000")),
+            ocr_cache_enabled=_as_bool(os.getenv("BACKEND_OCR_CACHE_ENABLED"), True),
+            ocr_count_failed_attempts=_as_bool(os.getenv("BACKEND_OCR_COUNT_FAILED_ATTEMPTS"), True),
         )

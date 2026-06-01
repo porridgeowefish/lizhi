@@ -14,6 +14,7 @@ router = APIRouter(prefix="/api/posts", tags=["posts"])
 def list_posts(
     request: Request,
     category: str = Query(default=""),
+    subcategory: str = Query(default=""),
     content_type: str = Query(default=""),
     time_range: str = Query(default=""),
     search: str = Query(default=""),
@@ -27,6 +28,7 @@ def list_posts(
     items, total = request.app.state.query_service.list_posts(
         db,
         category=category,
+        subcategory=subcategory,
         content_type=content_type,
         time_range=time_range,
         search=search,

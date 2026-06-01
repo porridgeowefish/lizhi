@@ -59,7 +59,102 @@ def test_prescreen_does_not_block_normal_english_title():
 
 def test_classify_categories_matches_new_taxonomy():
     categories = classify_categories("创新创业比赛报名通知", "面向全校学生开放")
-    assert "competition" in categories
+    assert categories == ["competition"]
+
+
+def test_classify_categories_returns_one_volunteer_category():
+    categories = classify_categories("志愿者招募活动报名", "面向全校同学")
+    assert categories == ["volunteer"]
+
+
+def test_classify_categories_excludes_lecture_from_campus_activity():
+    categories = classify_categories("校园活动讲座报名", "面向全校同学")
+    assert categories == ["lecture"]
+
+
+def test_classify_categories_maps_graduate_study():
+    categories = classify_categories("研究生招生夏令营申请", "推免和留学申请材料说明")
+    assert categories == ["graduate_study"]
+
+
+def test_classify_categories_prioritizes_lecture_before_graduate_study():
+    categories = classify_categories("考研讲座报名", "研究生升学经验分享")
+    assert categories == ["lecture"]
+
+
+def test_classify_categories_maps_exam_certification():
+    categories = classify_categories("普通话水平测试报名通知", "请按要求完成报名")
+    assert categories == ["exam_certification"]
+
+
+def test_classify_categories_prioritizes_certification_before_lecture():
+    categories = classify_categories("CFA考试经验分享会", "证书考试报名说明")
+    assert categories == ["exam_certification"]
+
+
+def test_classify_categories_excludes_school_exam_notice():
+    categories = classify_categories("期末考试安排通知", "请查询考场安排")
+    assert categories == ["other"]
+
+
+def test_classify_categories_maps_campus_activity():
+    categories = classify_categories("社团招新活动报名", "面向全校同学")
+    assert categories == ["campus_activity"]
+
+
+def test_classify_categories_uses_other_for_notice_only():
+    categories = classify_categories("停水停电温馨提醒", "请各位同学提前做好准备")
+    assert categories == ["other"]
+
+
+def test_classify_categories_uses_content_when_headline_is_ambiguous():
+    categories = classify_categories(
+        "报名开启",
+        "面向全校同学",
+        "本次活动为数学建模学科竞赛，请同学们组队参赛并提交作品。",
+    )
+    assert categories == ["competition"]
+
+
+def test_classify_categories_blocks_competition_result_notice():
+    categories = classify_categories("挑战杯获奖名单结果公示", "赛事回顾如下")
+    assert categories == ["other"]
+
+
+def test_classify_categories_does_not_return_multiple_categories():
+    categories = classify_categories("志愿服务活动报名", "面向全校同学")
+    assert categories == ["volunteer"]
+    assert len(categories) == 1
+
+
+def test_classify_categories_uses_configured_priority_for_ties():
+    categories = classify_categories("社团招新学科竞赛报名", "")
+    assert categories == ["competition"]
+
+
+def test_classify_categories_excludes_volunteer_from_campus_activity():
+    categories = classify_categories("艺术节志愿者招募", "校园艺术节现场服务人员招募")
+    assert categories == ["volunteer"]
+
+
+def test_classify_categories_excludes_recruitment_from_campus_activity():
+    categories = classify_categories("校园招聘宣讲会", "企业岗位投递开放")
+    assert categories == ["recruitment"]
+
+
+def test_classify_categories_excludes_internship_from_campus_activity():
+    categories = classify_categories("社团招新实习岗位", "简历投递开放")
+    assert categories == ["recruitment"]
+
+
+def test_classify_categories_excludes_competition_from_student_activity():
+    categories = classify_categories("学生会数学建模竞赛报名", "参赛队伍请提交作品")
+    assert categories == ["competition"]
+
+
+def test_classify_categories_keeps_field_practice_as_campus_activity_without_other_signals():
+    categories = classify_categories("外出实践活动报名", "学生组织开展文化交流活动")
+    assert categories == ["campus_activity"]
 
 
 def test_classify_content_type_actionable_for_opportunity():
@@ -156,7 +251,7 @@ def test_validate_llm_output_happy_path():
 
 
 def test_validate_llm_output_rejects_oversized_title():
-    raw = {"title": "A" * 50, "summary": "ok", "category": "notice"}
+    raw = {"title": "A" * 50, "summary": "ok", "category": "other"}
     result = _validate_llm_output(raw)
     assert "title" not in result
 
@@ -181,7 +276,7 @@ def test_validate_llm_output_rejects_null_strings():
 
 
 def test_validate_llm_output_truncates_long_summary():
-    raw = {"title": "ok", "summary": "x" * 500, "category": "notice"}
+    raw = {"title": "ok", "summary": "x" * 500, "category": "other"}
     result = _validate_llm_output(raw)
     assert len(result["summary"]) <= 200
 

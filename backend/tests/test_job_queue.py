@@ -7,6 +7,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from app.application.services.job_queue_service import JobQueueService
+from app.application.services.ocr_service import OcrService
 from app.core.config import Settings
 from app.db.models import Post, Source
 from app.db.session import build_session_factory
@@ -22,6 +23,21 @@ class ContentConnector:
         return {
             "content": "<section>报名入口已经开放，截止时间为5月28日18:00。</section>",
         }
+
+
+class ImageOnlyContentConnector:
+    async def fetch_post_detail(self, post_id: str) -> dict:
+        return {
+            "content": '<section><img src="https://example.com/ocr-worker.jpg" /></section>',
+        }
+
+
+class StubOcrClient:
+    def __init__(self, text: str):
+        self.text = text
+
+    def recognize_image_url(self, image_url: str) -> str:
+        return self.text
 
 
 class DeletedContentConnector:
@@ -257,6 +273,47 @@ def test_content_worker_fetches_missing_content_and_enqueues_llm(tmp_path: Path)
         assert "报名入口已经开放" in post.content_text_snapshot
         jobs = queue.list_recent(limit=10)
         assert any(job.job_type == JobType.LLM_POST.value for job in jobs)
+    finally:
+        db.close()
+
+
+def test_content_worker_uses_ocr_for_image_only_content(tmp_path: Path):
+    settings = build_settings(tmp_path)
+    settings.ocr_enabled = True
+    settings.ocr_min_text_length = 20
+    _, session_factory = build_session_factory(settings)
+    _, post_id = seed_source_and_post(session_factory)
+    db = session_factory()
+    try:
+        post = db.get(Post, post_id)
+        post.published_at = datetime.now(timezone.utc)
+        db.add(post)
+        db.commit()
+    finally:
+        db.close()
+    queue = JobQueueService(session_factory)
+    queue.enqueue(
+        JobType.FETCH_CONTENT,
+        "upstream:P001",
+        {"upstream_post_id": "P001", "post_id": post_id},
+    )
+    worker = ContentWorker(
+        session_factory,
+        queue,
+        ImageOnlyContentConnector(),
+        settings,
+        worker_id="content-test",
+        ocr_service=OcrService(settings, client=StubOcrClient("讲座报名入口已经开放")),
+    )
+
+    result = asyncio.run(worker.run_once(limit=1))
+
+    assert result["completed"] == 1
+    db = session_factory()
+    try:
+        post = db.get(Post, post_id)
+        assert post.content_status == ContentStatus.READY.value
+        assert "讲座报名入口已经开放" in post.content_text_snapshot
     finally:
         db.close()
 

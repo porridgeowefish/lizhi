@@ -216,7 +216,7 @@
             @click="toggleExpand(post)"
           >
             <div class="post-topline">
-              <span class="pill tag-sm" :class="'tag-' + post.primary_category">{{ categoryLabel(post.primary_category) }}</span>
+              <span class="pill tag-sm" :class="'tag-' + displayCategory(post)">{{ categoryLabel(displayCategory(post)) }}</span>
               <span class="post-date">{{ formatDate(post.published_at) }}</span>
             </div>
             <h3>{{ post.llm_title || post.title }}</h3>
@@ -284,8 +284,9 @@ const I18N = {
     supportHint: '喜欢点一下支持！',
     supported: '已经支持过啦',
     guideTitle: '使用指南', guideSkip: '跳过', guideNext: '下一步', guideDone: '开始使用',
-    club_activity: '校园活动', lecture: '讲座论坛', volunteer: '志愿公益',
-    competition: '竞赛征集', exam: '考试考核', recruitment: '招聘招募', notice: '通知公告', other: '其他',
+    campus_activity: '校园活动', lecture: '讲座论坛', volunteer: '志愿公益',
+    competition: '学科竞赛', recruitment: '就业招聘', graduate_study: '升学留学',
+    exam_certification: '考试考证', other: '其他',
   },
   en: {
     appName: 'Lizhi', tagline: 'SZU Campus Info Hub', syncNow: 'Sync Now', syncing: 'Syncing...',
@@ -304,12 +305,19 @@ const I18N = {
     supportHint: 'Tap once if you like it.',
     supported: 'Already supported',
     guideTitle: 'Quick Guide', guideSkip: 'Skip', guideNext: 'Next', guideDone: 'Get Started',
-    club_activity: 'Activity', lecture: 'Lecture', volunteer: 'Volunteer',
-    competition: 'Competition', exam: 'Exam', recruitment: 'Recruitment', notice: 'Notice', other: 'Other',
+    campus_activity: 'Campus Activity', lecture: 'Lecture Forum', volunteer: 'Volunteer',
+    competition: 'Competition', recruitment: 'Recruitment', graduate_study: 'Graduate Study',
+    exam_certification: 'Certification Exam', other: 'Other',
   },
 }
 
-const CATEGORY_KEYS = ['club_activity', 'lecture', 'volunteer', 'competition', 'exam', 'recruitment', 'notice', 'other']
+const CATEGORY_KEYS = ['campus_activity', 'competition', 'volunteer', 'exam_certification', 'recruitment', 'lecture', 'graduate_study', 'other']
+const CATEGORY_KEY_SET = new Set(CATEGORY_KEYS)
+const LEGACY_CATEGORY_MAP = {
+  club_activity: 'campus_activity',
+  exam: 'exam_certification',
+  notice: 'other',
+}
 const SUPPORT_CLIENT_KEY = 'lizhi-support-client-id'
 const SUPPORT_LIKED_KEY = 'lizhi-support-liked'
 
@@ -399,6 +407,17 @@ export default {
     })
 
     function categoryLabel(key) { return t.value[key] || key || '' }
+    function normalizeCategory(key) {
+      if (CATEGORY_KEY_SET.has(key)) return key
+      return LEGACY_CATEGORY_MAP[key] || ''
+    }
+    function displayCategory(post) {
+      if (filters.value.category) return filters.value.category
+      const primaryCategory = normalizeCategory(post?.primary_category)
+      if (primaryCategory) return primaryCategory
+      const categories = Array.isArray(post?.categories) ? post.categories : []
+      return categories.map(normalizeCategory).find(Boolean) || 'other'
+    }
     function setCategory(category) {
       filters.value.category = category
       expandedId.value = null
@@ -578,7 +597,7 @@ export default {
       draftSearch, activeSearch, filters, lastSyncJob,
       supportCount, supportLiked, supportBusy, supportPulse, supportFloatKey,
       lang, darkMode, t, showGuide, guideStep, guideSteps,
-      categoryOptions, activeFilterChips, syncMetrics, categoryLabel, deadlineTone, deadlineLabel, keyTimeTone, keyTimeLabel, keyTimeName,
+      categoryOptions, activeFilterChips, syncMetrics, categoryLabel, displayCategory, deadlineTone, deadlineLabel, keyTimeTone, keyTimeLabel, keyTimeName,
       toggleLang, toggleDark, dismissGuide, nextGuideStep,
       applyFilters, clearSearch, clearAllFilters, removeFilterChip, setCategory, setSort, setTimeRange, toggleExpand, loadMore, runSync, supportProject, formatDate, hasAnyTime,
     }
@@ -600,13 +619,13 @@ export default {
   --title-font: 'ZCOOL XiaoWei', serif;
   --body-font: 'LXGW WenKai TC', -apple-system, 'PingFang SC', sans-serif;
   --tag-font: 'Nunito', sans-serif;
-  --tag-club_activity: #d4edda; --tag-club_activity-fg: #2d6a3e;
+  --tag-campus_activity: #d4edda; --tag-campus_activity-fg: #2d6a3e;
   --tag-lecture: #d6eaf8; --tag-lecture-fg: #1a5276;
   --tag-volunteer: #fdebd0; --tag-volunteer-fg: #b9770e;
-  --tag-exam: #fadbd8; --tag-exam-fg: #922b21;
   --tag-recruitment: #d1f2eb; --tag-recruitment-fg: #0e6655;
   --tag-competition: #e8daef; --tag-competition-fg: #6c3483;
-  --tag-notice: #d5f5e3; --tag-notice-fg: #1e8449;
+  --tag-graduate_study: #fff3cd; --tag-graduate_study-fg: #7a5b00;
+  --tag-exam_certification: #fadbd8; --tag-exam_certification-fg: #922b21;
   --tag-other: #eaecee; --tag-other-fg: #5d6d7e;
 }
 
@@ -1090,13 +1109,13 @@ button, input, select { font: inherit; }
 }
 .pill:hover { transform: scale(1.06); }
 
-.pill.tag-club_activity { background: var(--tag-club_activity); color: var(--tag-club_activity-fg); }
+.pill.tag-campus_activity { background: var(--tag-campus_activity); color: var(--tag-campus_activity-fg); }
 .pill.tag-lecture { background: var(--tag-lecture); color: var(--tag-lecture-fg); }
 .pill.tag-volunteer { background: var(--tag-volunteer); color: var(--tag-volunteer-fg); }
-.pill.tag-exam { background: var(--tag-exam); color: var(--tag-exam-fg); }
 .pill.tag-recruitment { background: var(--tag-recruitment); color: var(--tag-recruitment-fg); }
 .pill.tag-competition { background: var(--tag-competition); color: var(--tag-competition-fg); }
-.pill.tag-notice { background: var(--tag-notice); color: var(--tag-notice-fg); }
+.pill.tag-graduate_study { background: var(--tag-graduate_study); color: var(--tag-graduate_study-fg); }
+.pill.tag-exam_certification { background: var(--tag-exam_certification); color: var(--tag-exam_certification-fg); }
 .pill.tag-other { background: var(--tag-other); color: var(--tag-other-fg); }
 
 .pill.success { background: rgba(90,143,92,0.12); color: var(--primary); }

@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.application.classification import compute_content_hash, normalize_whitespace
 from app.application.services.ingestion_service import extract_post_content
 from app.application.services.job_queue_service import JobQueueService, job_payload
+from app.application.services.ocr_service import OcrService
 from app.core.config import Settings
 from app.db.models import Post, PostProjection
 from app.db.session import build_session_factory
@@ -30,12 +31,14 @@ class ContentWorker:
         settings: Settings,
         *,
         worker_id: str = "content-worker",
+        ocr_service: OcrService | None = None,
     ):
         self.session_factory = session_factory
         self.queue = queue
         self.connector = connector
         self.settings = settings
         self.worker_id = worker_id
+        self.ocr_service = ocr_service or OcrService(settings, session_factory=session_factory)
 
     async def run_once(self, limit: int | None = None) -> dict[str, int | str]:
         jobs = self.queue.claim([JobType.FETCH_CONTENT], self.worker_id, limit or self.settings.content_worker_batch_size)
@@ -75,6 +78,13 @@ class ContentWorker:
         if str(detail.get("content") or "").strip() == "DELETED":
             raise ValueError("post is deleted or unavailable upstream")
         content_html, content_text = extract_post_content(detail)
+        ocr_result = self.ocr_service.maybe_append_ocr_text(
+            detail,
+            content_text,
+            post_id=post_id_value,
+            upstream_post_id=upstream_post_id,
+        )
+        content_text = ocr_result.content_text
         if not normalize_whitespace(content_text):
             raise ValueError("content fetch returned empty body")
 

@@ -19,11 +19,13 @@ from app.application.classification import (
     compute_content_hash,
     compute_ranking_score,
     compute_title_hash,
+    canonical_category,
     derive_display_level,
     derive_participation_status,
     derive_time_status,
     extract_time_signals,
     html_to_text,
+    normalize_category_list,
     normalize_whitespace,
     parse_iso_datetime,
     parse_llm_payload,
@@ -31,6 +33,7 @@ from app.application.classification import (
     sanitize_html,
     VALID_CATEGORIES,
 )
+from app.application.services.ocr_service import OcrService
 from app.db.models import DiscardedPost, LlmTask, Post, PostCategory, PostProjection, RawPayload, Source, SyncJob, SyncJobItem
 from app.domain.enums import (
     ContentStatus,
@@ -89,10 +92,11 @@ def _as_naive(value: datetime | None) -> datetime | None:
 
 
 class IngestionService:
-    def __init__(self, session_factory: sessionmaker[Session], connector, settings):
+    def __init__(self, session_factory: sessionmaker[Session], connector, settings, *, ocr_service: OcrService | None = None):
         self.session_factory = session_factory
         self.connector = connector
         self.settings = settings
+        self.ocr_service = ocr_service or OcrService(settings, session_factory=session_factory)
         self._lock = asyncio.Lock()
 
     async def run_sync(self, trigger_type: SyncTriggerType) -> SyncJob:
@@ -299,6 +303,7 @@ class IngestionService:
                 detail_count += 1
 
             content_html, content_text = extract_post_content(raw_post)
+            content_text = self._append_ocr_text_if_needed(raw_post, content_text, existing_post)
             secondary_decision = prescreen_post(
                 title=title,
                 summary=summary,
@@ -407,6 +412,7 @@ class IngestionService:
 
     def _fill_existing_content_if_available(self, db: Session, post: Post, raw_post: dict) -> bool:
         content_html, content_text = extract_post_content(raw_post)
+        content_text = self._append_ocr_text_if_needed(raw_post, content_text, post)
         if not (content_html or normalize_whitespace(content_text)):
             return False
 
@@ -427,6 +433,23 @@ class IngestionService:
         db.add(post)
         db.flush()
         return True
+
+    def _append_ocr_text_if_needed(self, raw_post: dict, content_text: str, post: Post | None = None) -> str:
+        result = self.ocr_service.maybe_append_ocr_text(
+            raw_post,
+            content_text,
+            post_id=post.id if post else None,
+            upstream_post_id=(post.upstream_post_id if post else str(raw_post.get("id") or "")),
+        )
+        if result.ocr_text:
+            _logger.warning(
+                "OCR text appended for upstream post %s: images=%s processed=%s chars=%s",
+                raw_post.get("id") or "",
+                result.image_count,
+                result.processed_count,
+                len(result.ocr_text),
+            )
+        return result.content_text
 
     async def _fetch_detail_if_needed(self, raw_post: dict, upstream_post_id: str) -> dict:
         if raw_post.get("content_html") or raw_post.get("content") or raw_post.get("content_text"):
@@ -596,16 +619,22 @@ class IngestionService:
         db.add(post)
         db.flush()
 
-        categories = list(dict.fromkeys(classify_categories(post.title, post.summary, content_text)))
+        categories = normalize_category_list(classify_categories(post.title, post.summary, content_text))
         # Prefer LLM category over rule-based for both filtering and display
         llm_structured = llm_result.get("structured") or {}
         llm_cat = llm_structured.get("category", "")
         if llm_cat in VALID_CATEGORIES:
-            categories = [llm_cat]
+            categories = [canonical_category(llm_cat)]
         category_source = "llm" if llm_cat in VALID_CATEGORIES else "rule_engine"
         db.query(PostCategory).filter(PostCategory.post_id == post.id).delete()
         db.flush()
-        post.categories = [PostCategory(category_code=category_code, category_source=category_source) for category_code in categories]
+        post.categories = [
+            PostCategory(
+                category_code=category_code,
+                category_source="llm" if category_code == llm_cat else category_source,
+            )
+            for category_code in categories
+        ]
         db.add(post)
         db.flush()
         return post, created
@@ -639,7 +668,7 @@ class IngestionService:
 
     def _upsert_projection(self, db: Session, post: Post) -> None:
         content_type = classify_content_type(post.title, post.summary, post.content_text_snapshot)
-        categories = [category.category_code for category in post.categories] or ["other"]
+        categories = normalize_category_list([category.category_code for category in post.categories])
         primary_category = categories[0]
         time_signals = extract_time_signals(post.title, post.summary, post.content_text_snapshot, post.published_at)
 

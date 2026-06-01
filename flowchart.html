@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>荔知：OCR + 关键词 + 语义 + LLM 复核流程</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --ink: #1f2a38;
+      --line: #48596b;
+      --border: #8fa0af;
+      --navy: #121a29;
+      --blue: #2c73df;
+      --blue-soft: #dff2fb;
+      --mint: #dcf8e7;
+      --lavender: #f0e2f8;
+      --rose: #ffe1e2;
+      --cream: #fff7ce;
+      --white: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #eef2f8;
+      color: var(--ink);
+      font-family:
+        "Microsoft YaHei",
+        "PingFang SC",
+        "Noto Sans CJK SC",
+        "Source Han Sans SC",
+        Arial,
+        sans-serif;
+    }
+
+    .page {
+      width: 1800px;
+      min-height: 3340px;
+      margin: 0 auto;
+      padding: 40px 70px 22px;
+      background: var(--bg);
+    }
+
+    .title {
+      height: 76px;
+      border-radius: 22px;
+      background: var(--navy);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 58px;
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .responsibilities {
+      margin: 6px 20px 0;
+      display: grid;
+      gap: 12px;
+    }
+
+    .bar {
+      height: 44px;
+      border: 1px solid #c0cad4;
+      border-radius: 12px;
+      padding: 5px 26px;
+      font-size: 25px;
+      line-height: 34px;
+      color: #223140;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.45);
+    }
+
+    .bar.keyword {
+      background: #f8fafc;
+    }
+
+    .bar.semantic {
+      background: #dff1f8;
+      color: #16495a;
+    }
+
+    .bar.llm {
+      background: #f2e5f8;
+      color: #48205a;
+    }
+
+    .chart {
+      margin: 18px 0 10px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 2960px;
+      overflow: visible;
+    }
+
+    mermaid-renderer {
+      width: 1660px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      overflow: visible;
+    }
+
+    mermaid-renderer svg {
+      width: 1580px !important;
+      max-width: none !important;
+      height: auto !important;
+      overflow: visible;
+    }
+
+    mermaid-renderer .node rect,
+    mermaid-renderer .node polygon,
+    mermaid-renderer .node path {
+      stroke-width: 3px !important;
+    }
+
+    mermaid-renderer .node rect {
+      rx: 16px;
+      ry: 16px;
+    }
+
+    mermaid-renderer .nodeLabel,
+    mermaid-renderer .edgeLabel,
+    mermaid-renderer foreignObject,
+    mermaid-renderer .label {
+      font-family:
+        "Microsoft YaHei",
+        "PingFang SC",
+        "Noto Sans CJK SC",
+        "Source Han Sans SC",
+        Arial,
+        sans-serif !important;
+      letter-spacing: 0 !important;
+    }
+
+    mermaid-renderer .nodeLabel {
+      color: var(--ink) !important;
+      font-weight: 700 !important;
+    }
+
+    mermaid-renderer .edgeLabel {
+      color: #3e4a57 !important;
+      background: var(--bg) !important;
+      padding: 1px 6px !important;
+      border-radius: 4px;
+    }
+
+    mermaid-renderer .edgeLabel foreignObject {
+      overflow: visible !important;
+    }
+
+    mermaid-renderer .edgeLabel foreignObject > div,
+    mermaid-renderer .edgeLabel foreignObject > span {
+      overflow: visible !important;
+      white-space: nowrap !important;
+    }
+
+    mermaid-renderer .flowchart-link {
+      stroke: var(--line) !important;
+      stroke-width: 3px !important;
+    }
+
+    mermaid-renderer marker path {
+      fill: var(--line) !important;
+      stroke: var(--line) !important;
+    }
+
+    .render-error {
+      width: 1200px;
+      margin: 80px auto;
+      padding: 28px;
+      border: 2px solid #b91c1c;
+      border-radius: 12px;
+      background: #fef2f2;
+      color: #7f1d1d;
+      font-size: 24px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+    }
+
+    .footer {
+      height: 48px;
+      border-radius: 12px;
+      background: #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 24px;
+      color: #111827;
+      font-size: 24px;
+      line-height: 1.25;
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      .page {
+        margin: 0;
+      }
+    }
+
+    @media (max-width: 1800px) {
+      body {
+        overflow-x: auto;
+      }
+    }
+  </style>
+</head>
+<style>
+body {
+    font-family: "Microsoft YaHei", "WenQuanYi Micro Hei", Arial, sans-serif;
+}
+</style>
+<body>
+  <main class="page" aria-label="荔知 OCR、关键词、语义和 LLM 复核流程图">
+    <header class="title">荔知： OCR + 关键词 + 语义 + LLM 复核流程</header>
+
+    <section class="responsibilities" aria-label="模块职责">
+      <div class="bar keyword">关键词规则负责：强业务边界、排除词、优先级、可解释证据</div>
+      <div class="bar semantic">语义检索负责：关键词不明显、同义表达、长文本语义补充</div>
+      <div class="bar llm">LLM负责：冲突裁判、低置信复核、抽取证据，不做主检索</div>
+    </section>
+
+    <section class="chart" aria-label="Mermaid 主流程">
+      <mermaid-renderer source-id="flowchart-source"></mermaid-renderer>
+      <script type="text/plain" id="flowchart-source">
+flowchart TD
+    A["公众号文章入库"]:::start
+    B{"正文是否足够?"}:::decision
+
+    A --> B
+    B -->|正文 >= 120字| C["使用标题 + 摘要 + 正文"]:::process
+    B -->|正文不足且有图片| D["腾讯云 OCR<br>识别图片文字"]:::process
+
+    D --> E["OCR 文字并入分类文本<br>不单独输出为正文"]:::process
+    C --> F["预筛选"]:::process
+    E --> F
+
+    F --> G{"是否明显不收录?"}:::decision
+    G -->|是| X["丢弃或隐藏<br>回顾 / 公示 / 总结 / 无关内容"]:::reject
+    G -->|否| H["关键词规则打分<br>核心词 / 强组合 / 排除词 / 优先级"]:::process
+
+    H --> I{"关键词规则<br>置信度是否高?"}:::decision
+    I -->|是| J["确定一级分类<br>写入对应一级分类标签"]:::confirm
+    I -->|否| K["Embedding 语义检索"]:::embedding
+
+    K --> L{"语义结果<br>是否明确?"}:::decision
+    L -->|明确| M["采用语义分类结果"]:::embedding
+    L -->|不明确 / 分差小 / 冲突| O["LLM 复核"]:::llm
+
+    M --> J
+    O --> P{"LLM 输出是否合法<br>且有证据?"}:::decision
+    P -->|是| J
+    P -->|否| R["归为其他<br>或保持最可靠候选"]:::other
+
+    J --> Z["搜索与列表展示"]:::finish
+    R --> Z
+    X --> Z
+
+    classDef start fill:#2c73df,stroke:#7b8b9e,color:#ffffff,stroke-width:3px;
+    classDef finish fill:#2c73df,stroke:#7b8b9e,color:#ffffff,stroke-width:3px;
+    classDef process fill:#ffffff,stroke:#8fa0af,color:#1f2a38,stroke-width:3px;
+    classDef decision fill:#fff7ce,stroke:#8fa0af,color:#4a3a00,stroke-width:3px;
+    classDef reject fill:#ffe1e2,stroke:#8fa0af,color:#7c2027,stroke-width:3px;
+    classDef embedding fill:#dff2fb,stroke:#8fa0af,color:#123149,stroke-width:3px;
+    classDef confirm fill:#dcf8e7,stroke:#8fa0af,color:#164f31,stroke-width:3px;
+    classDef llm fill:#f0e2f8,stroke:#8fa0af,color:#61206e,stroke-width:3px;
+    classDef other fill:#ffffff,stroke:#8fa0af,color:#1f2a38,stroke-width:3px;
+    classDef annotation fill:#fff7ce,stroke:#e6a817,color:#6b4400,stroke-width:2px,stroke-dasharray: 6 4;
+      </script>
+    </section>
+
+    <footer class="footer">
+      原则：关键词负责规则边界，语义负责模糊理解，LLM 只做疑难裁判。OCR 只是把图片文章补成可检索文本。
+    </footer>
+  </main>
+
+  <script>
+    // 同步加载 Mermaid：先尝试本地文件，失败则回退 CDN
+    // document.write 在页面解析阶段是阻塞的，保证 mermaid 就绪后才继续
+    var MERMAID_CDN = 'https://cdn.jsdelivr.net/npm/mermaid@10.9.3/dist/mermaid.min.js';
+    document.write('<script src="./frontend/node_modules/mermaid/dist/mermaid.min.js"><\/script>');
+    if (typeof mermaid === 'undefined') {
+      document.write('<script src="' + MERMAID_CDN + '"><\/script>');
+    }
+  </script>
+  <script>
+    class MermaidRenderer extends HTMLElement {
+      async connectedCallback() {
+        if (typeof mermaid === 'undefined') {
+          this.innerHTML = '<div class="render-error">Mermaid 库加载失败：本地路径和 CDN 均不可用。</div>';
+          return;
+        }
+
+        const sourceId = this.getAttribute("source-id");
+        const sourceEl = document.getElementById(sourceId);
+
+        if (!sourceEl) {
+          this.innerHTML = '<div class="render-error">找不到 Mermaid 源码。</div>';
+          return;
+        }
+
+        mermaid.initialize({
+          startOnLoad: false,
+          securityLevel: "loose",
+          theme: "base",
+          flowchart: {
+            curve: "linear",
+            htmlLabels: true,
+            nodeSpacing: 54,
+            rankSpacing: 46,
+            padding: 10
+          },
+          themeVariables: {
+            fontFamily: "Microsoft YaHei, PingFang SC, Noto Sans CJK SC, Arial, sans-serif",
+            fontSize: "22px",
+            primaryTextColor: "#1f2a38",
+            edgeLabelBackground: "#f5f7fb",
+            lineColor: "#48596b"
+          }
+        });
+
+        try {
+          const source = sourceEl.textContent.trim();
+          const id = `mermaid-${Math.random().toString(36).slice(2)}`;
+          const { svg } = await mermaid.render(id, source);
+          this.innerHTML = svg;
+
+          const rendered = this.querySelector("svg");
+          if (rendered) {
+            rendered.setAttribute("preserveAspectRatio", "xMidYMin meet");
+            rendered.removeAttribute("height");
+
+            // 修复 Mermaid 对中文边标签的宽度估算偏差：
+            // Mermaid 按拉丁字符宽度估算 foreignObject 尺寸，中文实际宽度约为其 1.6 倍
+            rendered.querySelectorAll(".edgeLabel foreignObject").forEach(fo => {
+              const w = parseFloat(fo.getAttribute("width")) || 0;
+              if (w > 0) fo.setAttribute("width", w * 1.6);
+            });
+          }
+        } catch (error) {
+          this.innerHTML = `<div class="render-error">Mermaid 渲染失败：\n${String(error.message || error)}</div>`;
+        }
+      }
+    }
+
+    customElements.define("mermaid-renderer", MermaidRenderer);
+  </script>
+</body>
+</html>

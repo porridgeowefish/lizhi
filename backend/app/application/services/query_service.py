@@ -3,9 +3,10 @@ from __future__ import annotations
 from collections import Counter
 from datetime import date, datetime, timedelta
 
-from sqlalchemy import case, func, or_, select
+from sqlalchemy import case, exists, func, or_, select
 from sqlalchemy.orm import Session, joinedload
 
+from app.application.classification import CATEGORY_DISPLAY_ORDER, category_aliases, canonical_category, effective_primary_category
 from app.db.models import Post, PostCategory, PostProjection, Source, SyncJob
 from app.domain.enums import ContentStatus, DisplayLevel, LlmStatus, TimelinessLevel, TimeStatus
 
@@ -22,6 +23,7 @@ class QueryService:
         db: Session,
         *,
         category: str = "",
+        subcategory: str = "",
         content_type: str = "",
         time_range: str = "",
         search: str = "",
@@ -37,10 +39,18 @@ class QueryService:
             .options(joinedload(Post.categories), joinedload(Post.source), joinedload(Post.projection))
         )
         count_statement = select(func.count(Post.id)).join(PostProjection, PostProjection.post_id == Post.id)
+        _ = subcategory  # Kept for backward-compatible API requests; secondary filtering is disabled.
 
         if category:
-            statement = statement.join(Post.categories).where(PostCategory.category_code == category)
-            count_statement = count_statement.join(PostCategory).where(PostCategory.category_code == category)
+            canonical = canonical_category(category)
+            category_codes = category_aliases(canonical)
+            category_exists = exists().where(
+                PostCategory.post_id == Post.id,
+                PostCategory.category_code.in_(category_codes),
+            )
+            category_clause = or_(PostProjection.primary_category.in_(category_codes), category_exists)
+            statement = statement.where(category_clause)
+            count_statement = count_statement.where(category_clause)
 
         if not show_all:
             now = datetime.now()
@@ -82,7 +92,7 @@ class QueryService:
             search_clause = or_(
                 Post.title.ilike(pattern),
                 Post.summary.ilike(pattern),
-                Post.source_name_snapshot.ilike(pattern),
+                Post.content_text_snapshot.ilike(pattern),
             )
             statement = statement.where(search_clause)
             count_statement = count_statement.where(search_clause)
@@ -151,17 +161,31 @@ class QueryService:
         recent_undated = (~has_key_time) & Post.published_at.is_not(None) & (Post.published_at >= recent_undated_cutoff)
         default_visibility = has_future_key_time | recent_undated
         category_rows = db.execute(
-            select(PostCategory.category_code, func.count(PostCategory.id))
-            .join(Post, Post.id == PostCategory.post_id)
-            .join(PostProjection, PostProjection.post_id == Post.id)
+            select(Post.id, PostProjection.primary_category, PostCategory.category_code)
+            .join(Post, Post.id == PostProjection.post_id)
+            .outerjoin(PostCategory, PostCategory.post_id == Post.id)
             .where(PostProjection.display_level != DisplayLevel.HIDDEN.value)
             .where(PostProjection.timeliness_level != TimelinessLevel.HIDDEN.value)
             .where(or_(Post.published_at.is_(None), Post.published_at >= DISPLAY_PUBLISHED_AFTER))
             .where(default_visibility)
-            .group_by(PostCategory.category_code)
-            .order_by(PostCategory.category_code)
         ).all()
-        categories = [{"category": row[0], "count": row[1]} for row in category_rows]
+        category_by_post: dict[int, dict[str, object]] = {}
+        for post_id, primary_category, category_code in category_rows:
+            entry = category_by_post.setdefault(post_id, {"primary": primary_category or "", "categories": []})
+            if category_code:
+                entry["categories"].append(category_code)
+        category_counts = Counter(
+            effective_primary_category(str(entry["primary"]), list(entry["categories"]))
+            for entry in category_by_post.values()
+        )
+        category_order = {category: index for index, category in enumerate(CATEGORY_DISPLAY_ORDER)}
+        categories = [
+            {"category": category, "count": count}
+            for category, count in sorted(
+                category_counts.items(),
+                key=lambda item: (category_order.get(item[0], len(category_order)), item[0]),
+            )
+        ]
 
         projection_rows = db.execute(
             select(

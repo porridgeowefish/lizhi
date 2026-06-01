@@ -122,6 +122,42 @@ class PostProjection(TimestampMixin, Base):
     post: Mapped[Post] = relationship(back_populates="projection")
 
 
+class OcrImageCache(TimestampMixin, Base):
+    __tablename__ = "ocr_image_cache"
+    __table_args__ = (
+        UniqueConstraint("image_url_hash", "ocr_action", name="uq_ocr_image_cache_hash_action"),
+        Index("ix_ocr_image_cache_month_status", "month_key", "status"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    image_url_hash: Mapped[str] = mapped_column(String(64), index=True)
+    image_url: Mapped[str] = mapped_column(Text)
+    ocr_action: Mapped[str] = mapped_column(String(64), default="RecognizeAgent", index=True)
+    ocr_text: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String(32), default="success", index=True)
+    error_message: Mapped[str] = mapped_column(Text, default="")
+    month_key: Mapped[str] = mapped_column(String(7), default="", index=True)
+    post_id: Mapped[int | None] = mapped_column(ForeignKey("posts.id"), nullable=True, index=True)
+    upstream_post_id: Mapped[str] = mapped_column(String(255), default="", index=True)
+
+
+class OcrUsageLog(TimestampMixin, Base):
+    __tablename__ = "ocr_usage_logs"
+    __table_args__ = (
+        Index("ix_ocr_usage_logs_month_action_status", "month_key", "ocr_action", "status"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    image_url_hash: Mapped[str] = mapped_column(String(64), index=True)
+    image_url: Mapped[str] = mapped_column(Text)
+    ocr_action: Mapped[str] = mapped_column(String(64), default="RecognizeAgent", index=True)
+    status: Mapped[str] = mapped_column(String(32), default="success", index=True)
+    month_key: Mapped[str] = mapped_column(String(7), default="", index=True)
+    post_id: Mapped[int | None] = mapped_column(ForeignKey("posts.id"), nullable=True, index=True)
+    upstream_post_id: Mapped[str] = mapped_column(String(255), default="", index=True)
+    error_message: Mapped[str] = mapped_column(Text, default="")
+
+
 class LlmTask(TimestampMixin, Base):
     __tablename__ = "llm_tasks"
 

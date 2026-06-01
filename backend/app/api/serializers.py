@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from datetime import datetime
 
+from app.application.classification import effective_primary_category, normalize_category_list
 from app.db.models import Post, Source, SyncJob, SyncJobItem
 from app.schemas.responses import (
     PostDetailResponse,
@@ -64,6 +65,9 @@ def _key_time(projection) -> tuple[datetime | None, str]:
 def serialize_post(post: Post) -> PostItemResponse:
     projection = post.projection
     key_time_at, key_time_type = _key_time(projection)
+    stored_categories = [category.category_code for category in post.categories]
+    primary_category = effective_primary_category(projection.primary_category if projection else "", stored_categories)
+    categories = normalize_category_list(stored_categories + [primary_category])
     return PostItemResponse(
         id=post.id,
         source_id=post.source_id,
@@ -77,8 +81,8 @@ def serialize_post(post: Post) -> PostItemResponse:
         published_at=post.published_at,
         content_status=post.content_status,
         content_type=projection.content_type if projection else "unknown",
-        primary_category=projection.primary_category if projection else "other",
-        categories=[category.category_code for category in post.categories],
+        primary_category=primary_category,
+        categories=categories,
         event_start_at=projection.event_start_at if projection else None,
         event_end_at=projection.event_end_at if projection else None,
         deadline_at=projection.deadline_at if projection else None,

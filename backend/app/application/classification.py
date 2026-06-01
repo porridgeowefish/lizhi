@@ -17,43 +17,310 @@ from app.domain.enums import (
 )
 
 PRESCREEN_RULE_VERSION = "iter1-v1"
+CONTENT_CLASSIFICATION_MAX_CHARS = 3000
 
-CATEGORY_RULES: dict[str, list[str]] = {
-    "club_activity": [
-        "活动", "社团", "讲堂", "沙龙", "训练营", "校园文化", "晚会", "展演",
-        "工作坊", "文化节", "嘉年华", "游园", "联欢", "庆典", "体验日",
-        "开放日", "交流", "见面会", "推介会", "校园行",
+CATEGORY_PRIORITY = [
+    "campus_activity",
+    "competition",
+    "volunteer",
+    "exam_certification",
+    "recruitment",
+    "lecture",
+    "graduate_study",
+]
+
+CATEGORY_DISPLAY_ORDER = CATEGORY_PRIORITY + ["other"]
+CATEGORY_ALIASES: dict[str, tuple[str, ...]] = {
+    "campus_activity": ("campus_activity", "club_activity"),
+    "exam_certification": ("exam_certification", "exam"),
+    "other": ("other", "notice"),
+}
+
+
+def category_aliases(category: str) -> tuple[str, ...]:
+    return CATEGORY_ALIASES.get(category, (category,))
+
+
+def canonical_category(category: str) -> str:
+    for canonical, aliases in CATEGORY_ALIASES.items():
+        if category in aliases:
+            return canonical
+    if category in CATEGORY_DISPLAY_ORDER:
+        return category
+    return "other"
+
+
+def normalize_category_list(categories: list[str]) -> list[str]:
+    normalized = [canonical_category(category) for category in categories if category]
+    unique = list(dict.fromkeys(normalized))
+    priority = {category: index for index, category in enumerate(CATEGORY_DISPLAY_ORDER)}
+    unique.sort(key=lambda category: priority.get(category, len(priority)))
+    return unique or ["other"]
+
+
+def effective_primary_category(primary_category: str, categories: list[str]) -> str:
+    primary = canonical_category(primary_category)
+    if primary != "other":
+        return primary
+
+    for category in normalize_category_list(categories):
+        if category != "other":
+            return category
+    return "other"
+
+
+CATEGORY_CORE_KEYWORDS: dict[str, list[str]] = {
+    "campus_activity": [
+        "社团",
+        "招新",
+        "迎新",
+        "晚会",
+        "音乐节",
+        "文化节",
+        "游园会",
+        "运动会",
+        "歌手大赛",
+        "校园跑",
+        "联谊",
+        "团建",
+        "文艺汇演",
+        "学生会",
+        "艺术节",
+        "电竞赛",
     ],
     "lecture": [
-        "讲座", "论坛", "报告", "宣讲", "学术", "分享会", "研讨", "公开课",
-        "学术交流", "专题报告", "学术报告", "前沿", "名师", "院士", "学者",
-        "读书会", "学术沙龙", "学术讲座", "专题讲座",
+        "讲座",
+        "论坛",
+        "沙龙",
+        "分享会",
+        "报告会",
+        "讲堂",
+        "公开课",
+        "学术报告",
+        "圆桌论坛",
+        "研讨会",
+        "经验分享",
+        "主题报告",
     ],
     "volunteer": [
-        "志愿", "义工", "公益", "志愿者", "服务日", "服务队",
-        "支教", "捐赠", "爱心", "慈善", "救助", "义卖",
+        "志愿者",
+        "公益",
+        "支教",
+        "献血",
+        "义工",
+        "社区服务",
+        "环保行动",
+        "公益活动",
+        "志愿服务",
+        "志愿招募",
+        "社会实践",
     ],
     "competition": [
-        "竞赛", "比赛", "挑战赛", "大赛", "评比", "征集", "作品赛",
-        "选拔赛", "创新创业", "创业大赛", "挑战杯", "互联网+",
-        "设计大赛", "编程", "黑客松", "马拉松", "答辩",
-    ],
-    "exam": [
-        "考试", "考核", "报名", "四六级", "选课", "缓考", "补考", "机考",
-        "准考证", "考场", "资格", "证书", "考研", "保研", "推免",
-        "入学考试", "模拟考试", "期末", "期中",
+        "竞赛",
+        "大赛",
+        "挑战杯",
+        "互联网+",
+        "数学建模",
+        "创新创业",
+        "电子设计",
+        "机器人大赛",
+        "案例分析",
+        "作品征集",
+        "项目申报",
+        "科创比赛",
     ],
     "recruitment": [
-        "招聘", "招募", "实习", "春招", "秋招", "纳新", "遴选", "投递",
-        "校招", "社招", "岗位", "兼职", "辅导员", "教师岗",
-        "寒招", "宣讲会", "双选会", "人才引进", "offer",
+        "招聘",
+        "校招",
+        "实习",
+        "宣讲会",
+        "岗位",
+        "简历投递",
+        "面试",
+        "offer",
+        "就业",
+        "人才计划",
+        "招聘会",
+        "管培生",
     ],
-    "notice": [
-        "通知", "公告", "通告", "提醒", "须知", "安排",
-        "公示", "声明", "通报", "决定", "批复", "意见",
-        "办法", "方案", "规程", "条例", "规定",
+    "graduate_study": [
+        "考研",
+        "保研",
+        "研究生",
+        "留学",
+        "交换项目",
+        "夏令营",
+        "推免",
+        "硕士招生",
+        "博士招生",
+        "CSC",
+        "海外交流",
+        "申请材料",
+    ],
+    "exam_certification": [
+        "四六级",
+        "大学英语四级",
+        "大学英语六级",
+        "英语四级",
+        "英语六级",
+        "CET-4",
+        "CET-6",
+        "CET4",
+        "CET6",
+        "普通话",
+        "普通话水平测试",
+        "计算机等级考试",
+        "全国计算机等级考试",
+        "NCRE",
+        "教师资格证",
+        "教师资格考试",
+        "教资",
+        "法考",
+        "法律职业资格考试",
+        "软考",
+        "计算机技术与软件专业技术资格",
+        "CFA",
     ],
 }
+
+CATEGORY_RULES = CATEGORY_CORE_KEYWORDS
+
+CATEGORY_COMBO_RULES: dict[str, list[tuple[list[str], ...]]] = {
+    "campus_activity": [
+        (["社团"], ["招新"]),
+        (["校园"], ["活动"]),
+        (["学生会"], ["纳新"]),
+        (["迎新"], ["活动"]),
+        (["文化"], ["活动"]),
+    ],
+    "lecture": [
+        (["专家"], ["讲座"]),
+        (["学术"], ["报告"]),
+        (["主题"], ["分享"]),
+        (["经验"], ["交流"]),
+        (["技术"], ["分享"]),
+    ],
+    "volunteer": [
+        (["志愿者"], ["招募"]),
+        (["公益"], ["活动"]),
+        (["社区"], ["服务"]),
+        (["支教"], ["活动"]),
+        (["环保"], ["行动"]),
+    ],
+    "competition": [
+        (["报名"], ["竞赛"]),
+        (["作品"], ["提交"]),
+        (["参赛"], ["队伍"]),
+        (["创新"], ["大赛"]),
+        (["项目"], ["评审"]),
+    ],
+    "recruitment": [
+        (["校园"], ["招聘"]),
+        (["岗位"], ["招聘"]),
+        (["实习"], ["岗位"]),
+        (["企业"], ["宣讲"]),
+        (["简历"], ["投递"]),
+    ],
+    "graduate_study": [
+        (["保研"], ["经验"]),
+        (["考研"], ["讲座"]),
+        (["研究生"], ["招生"]),
+        (["留学"], ["申请"]),
+        (["交换"], ["项目"]),
+    ],
+    "exam_certification": [
+        (["四六级"], ["报名"]),
+        (["普通话"], ["报名"]),
+        (["计算机等级"], ["报名"]),
+        (["教师资格"], ["报名"]),
+        (["法考"], ["报名"]),
+        (["软考"], ["报名"]),
+        (["CFA"], ["报名"]),
+        (["证书"], ["考试"]),
+        (["资格"], ["考试"]),
+    ],
+}
+
+CATEGORY_EXCLUDE_KEYWORDS: dict[str, list[str]] = {
+    "campus_activity": [
+        "竞赛",
+        "大赛",
+        "挑战杯",
+        "数学建模",
+        "项目申报",
+        "作品征集",
+        "招聘",
+        "校招",
+        "实习",
+        "宣讲会",
+        "岗位",
+        "简历投递",
+        "面试",
+        "offer",
+        "就业",
+        "招聘会",
+        "管培生",
+        "志愿者",
+        "公益",
+        "志愿服务",
+        "志愿招募",
+        "义工",
+        "支教",
+        "献血",
+        "四六级",
+        "普通话",
+        "计算机等级考试",
+        "教师资格证",
+        "法考",
+        "软考",
+        "CFA",
+        "讲座",
+        "论坛",
+        "沙龙",
+        "报告会",
+        "公开课",
+        "研讨会",
+        "经验分享",
+        "保研",
+        "考研",
+        "研究生",
+        "留学",
+        "交换项目",
+        "夏令营",
+        "推免",
+    ],
+    "lecture": [
+        "招聘",
+        "岗位",
+        "投递",
+        "录用",
+        "保研",
+        "招生",
+        "交换项目",
+    ],
+    "volunteer": ["招聘", "实习", "竞赛", "保研"],
+    "competition": ["获奖名单", "结果公示", "赛事回顾"],
+    "recruitment": ["学术讲座", "经验分享", "技术论坛"],
+    "graduate_study": ["招聘", "实习", "竞赛"],
+    "exam_certification": [
+        "期末",
+        "期中",
+        "补考",
+        "缓考",
+        "重修",
+        "选课",
+        "退课",
+        "调课",
+        "考试安排",
+        "考场安排",
+        "成绩查询",
+    ],
+}
+
+CATEGORY_SCORE_THRESHOLD = 5
+CORE_KEYWORD_SCORE = 5
+COMBO_KEYWORD_SCORE = 8
+EXCLUDE_KEYWORD_PENALTY = 5
 
 NON_SHENZHEN_LOCATIONS = [
     "北京", "上海", "广州", "成都", "杭州", "武汉", "南京", "重庆", "西安",
@@ -205,6 +472,24 @@ def _contains_any(text: str, items: list[str]) -> list[str]:
     return [item for item in items if item and item.lower() in text.lower()]
 
 
+def _matches_combo_rule(text: str, combo_rule: tuple[list[str], ...]) -> bool:
+    return all(_contains_any(text, group) for group in combo_rule)
+
+
+def _score_category_text(text: str, category: str, *, weight: int) -> int:
+    if not text:
+        return 0
+    core_hits = _contains_any(text, CATEGORY_CORE_KEYWORDS.get(category, []))
+    combo_hits = [rule for rule in CATEGORY_COMBO_RULES.get(category, []) if _matches_combo_rule(text, rule)]
+    exclude_hits = _contains_any(text, CATEGORY_EXCLUDE_KEYWORDS.get(category, []))
+
+    score = len(core_hits) * CORE_KEYWORD_SCORE
+    score += len(combo_hits) * COMBO_KEYWORD_SCORE
+    if exclude_hits and not (category == "exam_certification" and core_hits):
+        score -= len(exclude_hits) * EXCLUDE_KEYWORD_PENALTY
+    return score * weight
+
+
 def _quality_signals(text: str) -> dict[str, float | int | str]:
     value = text or ""
     length = len(value)
@@ -318,11 +603,28 @@ def prescreen_post(*, title: str, summary: str = "", source_name: str = "", body
 
 
 def classify_categories(title: str, summary: str = "", content: str = "") -> list[str]:
-    text = normalize_whitespace(f"{title} {summary}").lower()
-    matched = [category for category, keywords in CATEGORY_RULES.items() if _contains_any(text, keywords)]
-    if "club_activity" in matched and _is_off_campus_activity(text):
-        matched = [c for c in matched if c != "club_activity"]
-    return matched or ["other"]
+    headline_text = normalize_whitespace(f"{title} {summary}")
+    content_text = normalize_whitespace((content or "")[:CONTENT_CLASSIFICATION_MAX_CHARS])
+    combined_text = normalize_whitespace(f"{headline_text} {content_text}")
+    scores = {}
+    for category in CATEGORY_PRIORITY:
+        score = _score_category_text(headline_text, category, weight=2)
+        score += _score_category_text(content_text, category, weight=1)
+        if category == "campus_activity" and _is_off_campus_activity(combined_text):
+            score = 0
+        scores[category] = score
+
+    if scores["campus_activity"] >= CATEGORY_SCORE_THRESHOLD and any(
+        scores[category] >= CATEGORY_SCORE_THRESHOLD
+        for category in CATEGORY_PRIORITY
+        if category != "campus_activity"
+    ):
+        scores["campus_activity"] = 0
+
+    for category in CATEGORY_PRIORITY:
+        if scores[category] >= CATEGORY_SCORE_THRESHOLD:
+            return [category]
+    return ["other"]
 
 
 def _is_off_campus_activity(text: str) -> bool:
@@ -474,10 +776,11 @@ def compute_ranking_score(
     score += {
         "competition": 20,
         "recruitment": 20,
+        "graduate_study": 20,
         "lecture": 15,
         "volunteer": 15,
-        "exam": 15,
-        "club_activity": 10,
+        "exam_certification": 15,
+        "campus_activity": 10,
     }.get(primary_category, 0)
     score += {
         TimeStatus.ONGOING: 25,
@@ -525,7 +828,7 @@ def build_summary(*, title: str, upstream_summary: str, llm_summary: str, conten
     return summary[:140]
 
 
-VALID_CATEGORIES = {"club_activity", "lecture", "volunteer", "competition", "exam", "recruitment", "notice"}
+VALID_CATEGORIES = set(CATEGORY_PRIORITY) | {"other"}
 ISO_DATETIME_RE = re.compile(r"^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2})?)?$")
 
 
